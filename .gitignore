@@ -1,0 +1,9 @@
+# 개인 정보 / 평문 일정 / 비밀번호 — 절대 올리지 않음
+private/
+*.secret.json
+
+# 개발용
+node_modules/
+.devtools/
+tools/test/out/
+*.log
