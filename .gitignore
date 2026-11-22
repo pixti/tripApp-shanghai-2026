@@ -7,3 +7,4 @@ node_modules/
 .devtools/
 tools/test/out/
 *.log
+.idea/

@@ -9,6 +9,8 @@ import { tilesForTrip, prefetchTiles, countCachedTiles } from './tiles.js';
 import * as E from './editor.js';
 import { CAT, MOVE } from './consts.js';
 import { distM } from './gcj.js';
+import { GUIDE_ASOF, TRAIN_STEPS, STATIONS, SECTIONS, AI_TARGETS, findStation, buildPrompt, photoUrl, STATION_PHOTOS } from './guide.js';
+import { SITES, findSite, siteMapSvg } from './sites.js';
 
 const SYNC_TEXT = {
   idle: ['●', '대기', 's-idle'],
@@ -19,6 +21,9 @@ const SYNC_TEXT = {
   error: ['●', '연결 오류', 's-err'],
   auth: ['●', '권한 오류', 's-err'],
 };
+
+// 날짜 탭 뒤에 붙는 탭 (옆으로 밀기 순서)
+const OTHER_TABS = ['check', 'guide', 'info'];
 
 function shortName(s) {
   return String((s && s.name) || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
@@ -99,7 +104,7 @@ export class App {
       const t = e.changedTouches[0];
       const dx = t.clientX - sx, dy = t.clientY - sy;
       if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
-      const ids = [...(this.data.days || []).map(d => d.id), 'check', 'info'];
+      const ids = [...(this.data.days || []).map(d => d.id), ...OTHER_TABS];
       const i = ids.indexOf(this.tab);
       const j = i + (dx < 0 ? 1 : -1);
       if (i >= 0 && j >= 0 && j < ids.length) this.setTab(ids[j]);
@@ -131,7 +136,7 @@ export class App {
       if (this.map) this.map.resetTiles();
     }
     const days = this.data.days || [];
-    if (!this.tab || (this.tab !== 'info' && this.tab !== 'check' && !days.some(d => d.id === this.tab))) {
+    if (!this.tab || (!OTHER_TABS.includes(this.tab) && !days.some(d => d.id === this.tab))) {
       this.tab = this.defaultTab();
     }
     this.renderTabs();
@@ -145,6 +150,7 @@ export class App {
       this.el.otherView.hidden = false;
       this.el.nextBar.hidden = true;
       if (this.tab === 'info') this.renderInfo();
+      else if (this.tab === 'guide') this.renderGuide();
       else this.renderCheck();
     }
   }
@@ -279,6 +285,8 @@ export class App {
     nav.append(
       h('button', { class: `tab ${this.tab === 'check' ? 'active' : ''}`, type: 'button', onclick: () => this.setTab('check') },
         h('b', null, '✅ 예약', todo ? h('em', { class: 'count' }, String(todo)) : null), h('small', null, '체크리스트')),
+      h('button', { class: `tab ${this.tab === 'guide' ? 'active' : ''}`, type: 'button', onclick: () => this.setTab('guide') },
+        h('b', null, '🧭 가이드'), h('small', null, '기차·지하철·중국 팁')),
       h('button', { class: `tab ${this.tab === 'info' ? 'active' : ''}`, type: 'button', onclick: () => this.setTab('info') },
         h('b', null, 'ℹ️ 정보'), h('small', null, '항공·숙소·결제')),
     );
@@ -445,13 +453,17 @@ export class App {
       const url = MAP.route(s, { from: prev, kind: A.routeKind(mv.mode), ...this.linkOpts() });
       routeBtn = h('a', { class: 'route-btn', ...this.linkAttrs(url) }, '경로');
     }
+    // 기차 구간: 타는 법 안내 (출발역·도착역 가이드 연결)
+    const trainBtn = mv.mode === 'train'
+      ? h('button', { class: 'route-btn train-btn', type: 'button', onclick: () => this.openTrainGuide(prev, s) }, '🚄 타는 법')
+      : null;
     // 고덕에서 받아온 경로 (이전 장소가 그대로일 때만 표시 — 순서가 바뀌면 옛 정보라 숨김)
     const r = s.route && prev && s.route.from === prev.id ? s.route : null;
     if (!r) {
       return h('div', { class: `move mode-${mv.mode || 'none'}` },
         h('span', { class: 'mv-icon' }, m.icon),
         h('span', { class: 'mv-text' }, mv.text || m.label),
-        routeBtn);
+        trainBtn, routeBtn);
     }
     const sum = [];
     if (r.min != null) sum.push(r.min >= 60 ? `${Math.floor(r.min / 60)}시간 ${r.min % 60}분` : `${r.min}분`);
@@ -464,7 +476,7 @@ export class App {
         r.steps && r.steps.length ? h('div', { class: 'mv-steps' }, r.steps.map(x => h('span', { class: 'mv-step', lang: 'zh-CN' },
           h('b', null, x.line.replace(/^(地铁|轨道交通)/, '')), ` ${x.from} → ${x.to}`))) : null,
         h('div', { class: 'mv-src' }, `${MAP.name} 기준 ${r.at ? r.at.slice(5).replace('-', '/') : ''} · 실시간은 [경로]`)),
-      routeBtn);
+      trainBtn, routeBtn);
   }
 
   stopCard(day, track, s, i, ctx) {
@@ -521,6 +533,17 @@ export class App {
       card.append(h('div', { class: 'links' }, s.links.map(l => h('a', { class: 'chip', href: l.url, target: '_blank', rel: 'noopener' }, '🔗 ', l.label || '링크'))));
     }
 
+    const st = findStation(s);
+    if (st) {
+      card.append(h('button', { class: 'st-guide', type: 'button', onclick: () => this.openStation(st) },
+        h('span', null, `${st.icon} ${st.name} 안내`), h('small', null, '타는 법 · 나가는 법 · 몇 층')));
+    }
+    const site = findSite(s);
+    if (site) {
+      card.append(h('button', { class: 'st-guide site-guide', type: 'button', onclick: () => this.openSite(site) },
+        h('span', null, `🗺️ ${site.name} 내부 동선 지도`), h('small', null, `추천 순서 · 꼭 볼 곳 · ${site.time}`)));
+    }
+
     const actions = h('div', { class: 'actions' });
     if (A.hasPos(s)) {
       const url = MAP.route(s, { kind: A.routeKind(s.move && s.move.mode), ...lo });
@@ -568,6 +591,12 @@ export class App {
     if (A.hasPos(s)) items.push(item(`🚇 근처 지하철역 찾기 (${MAP.name})`, null, this.linkAttrs(this.nearStationUrl(s))));
     if (s.zh) items.push(item(`🀄 ${this.local.label} 크게 보여주기 (택시·직원)`, () => this.showZh(s)));
     if (s.addr) items.push(item(`📋 ${this.local.label} 주소 복사`, () => this.copy(s.addr)));
+    const st = findStation(s);
+    if (st) items.push(item(`${st.icon} ${st.name} 안내 (타는 법·나가는 법)`, () => setTimeout(() => this.openStation(st), 120)));
+    const site = findSite(s);
+    if (site) items.push(item(`🗺️ ${site.name} 내부 동선 지도`, () => setTimeout(() => this.openSite(site), 120)));
+    items.push(item(ctx.prev ? `🤖 AI에게 묻기: ${shortName(ctx.prev)} → 여기 가는 법` : '🤖 AI에게 여기 가는 법 묻기',
+      () => setTimeout(() => this.openAskAI(this.stopPrompt(day, s, ctx.prev)), 120)));
     items.push(item(this.store.done.has(s.id) ? '↩️ 완료 취소' : '✅ 완료 표시', () => this.store.toggleDone(s.id)));
     if (this.store.canEdit) {
       items.push(item('✏️ 이 장소 수정', () => E.editStop(this, { day, track, stop: s })));
@@ -688,6 +717,261 @@ export class App {
         ? h('a', { class: 'btn primary nb-btn', ...this.linkAttrs(MAP.route(next, { kind: A.routeKind(next.move && next.move.mode), ...lo })) }, MAP.name, h('br'), '길찾기')
         : null,
     ]);
+  }
+
+  // ── 가이드 탭 (앱에 내장된 교통·생활 안내) ─────────────
+  renderGuide() {
+    const v = this.el.otherView;
+    clear(v);
+    v.append(h('div', { class: 'card guide-intro' },
+      h('h3', null, '🧭 중국 처음이라면'),
+      h('p', null, '기차·지하철 타는 순서, 역 안에서 몇 층으로 가는지, 갑자기 나오는 짐검사까지 정리했어요. 중국어 글자는 누르면 복사, ⤢ 누르면 크게 보여줘요.'),
+      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 역 구조·규정은 바뀔 수 있으니 현장 표지판과 직원 안내가 우선이에요.`)));
+
+    // 기차 타는 법
+    const train = h('details', { class: 'card info-sec', open: this.guideOpen ? this.guideOpen.has('train') : true },
+      h('summary', null, h('h3', null, '🚄 기차(고속철) 타는 법 — 처음부터 끝까지')),
+      this.stepList(TRAIN_STEPS));
+    this.trackGuideOpen(train, 'train');
+    v.append(train);
+
+    // 역별 안내
+    v.append(h('div', { class: 'card' },
+      h('h3', null, '🚉 역별 안내 — 몇 층에서 타고 어디로 나가는지'),
+      h('div', { class: 'st-grid' }, STATIONS.map(st => h('button', { class: 'st-card', type: 'button', onclick: () => this.openStation(st) },
+        h('b', null, `${st.icon} ${st.name}`),
+        h('span', { lang: 'zh-CN' }, st.zh),
+        h('small', null, st.sub))))));
+
+    // 정원 내부 동선
+    v.append(h('div', { class: 'card' },
+      h('h3', null, '🏯 정원 내부 동선 지도 — 오래 걸리는 곳'),
+      h('p', { class: 'muted small' }, '2~3시간 걸리는 큰 정원은 안에서 길을 잃기 쉬워요. 추천 순서대로 그린 개략도와 꼭 볼 곳이에요.'),
+      h('div', { class: 'st-grid' }, SITES.map(site => h('button', { class: 'st-card', type: 'button', onclick: () => this.openSite(site) },
+        h('b', null, `🗺️ ${site.name}`),
+        h('span', { lang: 'zh-CN' }, `${site.zh} · ${site.city}`),
+        h('small', null, site.time))))));
+
+    // 주제별
+    SECTIONS.forEach(sec => {
+      const card = h('details', { class: 'card info-sec', open: this.guideOpen ? this.guideOpen.has(sec.id) : false },
+        h('summary', null, h('h3', null, `${sec.icon} ${sec.title}`)),
+        h('div', { class: 'rt' }, this.rich(sec.body)));
+      this.trackGuideOpen(card, sec.id);
+      v.append(card);
+    });
+
+    // AI에게 묻기 (자유 질문)
+    const from = h('input', { class: 'inp', placeholder: '출발 (예: 塘桥역, 숙소)' });
+    const to = h('input', { class: 'inp', placeholder: '도착 (예: 上海虹桥站 G7xxx 탑승)' });
+    const q = h('textarea', { class: 'inp', rows: 3, placeholder: '궁금한 것 (예: 기차 타려면 몇 층으로 가요? 짐검사에서 뭘 꺼내야 해요?)' });
+    v.append(h('div', { class: 'card ai-card' },
+      h('h3', null, '🤖 AI에게 묻기'),
+      h('p', { class: 'muted small' }, '여기 없는 상황은 AI에게 물어보세요. 질문을 "단계별·몇 층·표지판 중국어·확실하지 않으면 확인 필요 표시" 형식으로 만들어서 넘겨줘요. 장소 카드 ⋯ 메뉴에서는 그 구간 정보가 자동으로 들어가요.'),
+      h('div', { class: 'editor' }, from, to, q),
+      h('div', { class: 'row ai-go' }, h('button', {
+        class: 'btn primary', type: 'button',
+        onclick: () => this.openAskAI(buildPrompt({ from: from.value.trim(), to: to.value.trim(), question: q.value.trim(), context: this.tripContext() })),
+      }, '질문 만들기 →'))));
+    v.append(h('div', { class: 'list-end' }));
+  }
+
+  trackGuideOpen(card, id) {
+    card.addEventListener('toggle', () => {
+      if (!this.guideOpen) this.guideOpen = new Set(['train']);
+      if (card.open) this.guideOpen.add(id); else this.guideOpen.delete(id);
+    });
+  }
+
+  stepList(steps) {
+    return h('ol', { class: 'steps' }, steps.map(t => h('li', null, inline(t, this.richCtx()))));
+  }
+
+  // 역 하나의 안내 (출발 / 도착 / 층 구조)
+  openStation(st, { focus = null } = {}) {
+    const lo = this.linkOpts();
+    const part = (key, title) => st[key] && st[key].length
+      ? h('details', { class: 'st-part', open: !focus || focus === key }, h('summary', null, title), this.stepList(st[key]))
+      : null;
+    const body = h('div', { class: 'st-sheet' },
+      h('div', { class: 'st-head' },
+        h('div', { class: 'st-zh', lang: 'zh-CN' }, st.zh),
+        h('div', { class: 'muted small' }, st.sub)),
+      st.floors && st.floors.length ? h('div', { class: 'floors' }, st.floors.map(([f, t]) => h('div', { class: 'floor' }, h('b', null, f), h('span', null, t)))) : null,
+      h('div', { class: 'photo-row' }, h('span', { class: 'muted small' }, '📷 사진으로 미리 보기'), STATION_PHOTOS.map(([q, ko]) => h('a', { class: 'chip', href: photoUrl(`${st.zh} ${q}`), target: '_blank', rel: 'noopener' }, ko))),
+      focus === 'arrive' ? [part('arrive', '🚪 도착해서 나가기'), part('depart', '🚶 타러 가기 (출발)')]
+        : [part('depart', '🚶 타러 가기 (출발)'), part('arrive', '🚪 도착해서 나가기')],
+      st.tips && st.tips.length ? h('div', { class: 'note-box' }, h('ul', { class: 'rt-ul' }, st.tips.map(t => h('li', null, inline(t, this.richCtx()))))) : null,
+      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 현장 표지판이 우선이에요. 고덕 지하철 경로의 「站内图文指引」(역 안 사진 길안내)도 같이 보세요.`));
+    openSheet({
+      title: `${st.icon} ${st.name} 안내`,
+      body,
+      full: true,
+      actions: [
+        h('a', { class: 'btn', ...this.linkAttrs(MAP.search({ zh: st.zh }, lo)) }, `🗺️ ${MAP.name}에서 보기`),
+        h('button', {
+          class: 'btn', type: 'button',
+          onclick: () => this.openAskAI(buildPrompt({
+            to: st.zh,
+            context: this.tripContext(),
+            question: `${st.zh}(${st.name})에서 고속철 타는 법과 내려서 나가는 법을 자세히 알려줘. 몇 층이 출발층인지, 지하철에서 어떻게 올라가는지, 여권 확인·짐검사 위치, 검표구 찾는 법, 도착 후 지하철·택시 타는 곳까지.`,
+          })),
+        }, '🤖 AI에게 더 묻기'),
+      ],
+    });
+  }
+
+  // 기차 구간: 공통 순서 + 출발역/도착역 안내 바로가기
+  openTrainGuide(from, to) {
+    const a = findStation(from);
+    const b = findStation(to);
+    let sheet = null;
+    const go = (st, focus) => { sheet.close(); setTimeout(() => this.openStation(st, { focus }), 120); };
+    const links = [
+      a ? h('button', { class: 'st-card', type: 'button', onclick: () => go(a, 'depart') }, h('b', null, `출발 ${a.icon} ${a.name}`), h('small', null, '타러 가기 · 몇 층')) : null,
+      b ? h('button', { class: 'st-card', type: 'button', onclick: () => go(b, 'arrive') }, h('b', null, `도착 ${b.icon} ${b.name}`), h('small', null, '내려서 나가기')) : null,
+    ].filter(Boolean);
+    const body = h('div', null,
+      links.length ? h('div', { class: 'st-grid' }, links) : null,
+      h('h4', { class: 'rt-h' }, '기차 타는 순서'),
+      this.stepList(TRAIN_STEPS));
+    sheet = openSheet({
+      title: `🚄 ${from ? shortName(from) : ''} → ${shortName(to)}`,
+      body,
+      full: true,
+      actions: [h('button', {
+        class: 'btn', type: 'button',
+        onclick: () => this.openAskAI(this.stopPrompt(null, to, from)),
+      }, '🤖 이 구간 AI에게 묻기')],
+    });
+  }
+
+  // 일정 공통 맥락 (숙소 등) — AI 질문에 덧붙임
+  tripContext() {
+    const out = [];
+    const hotel = (this.data.days || []).flatMap(d => (d.tracks || []).flatMap(t => t.stops || [])).find(s => s.cat === 'hotel' && (s.zh || s.name));
+    if (hotel) out.push(`숙소: ${[hotel.zh, hotel.station && `가까운 지하철역 ${hotel.station}`].filter(Boolean).join(' / ') || hotel.name}`);
+    out.push('여권으로 트립닷컴/12306에서 산 전자 기차표, 알리페이 사용, 고덕지도 사용');
+    return out;
+  }
+
+  stopPrompt(day, s, prev) {
+    const place = x => x ? [x.name, x.zh && x.zh !== x.name ? x.zh : ''].filter(Boolean).join(' / ') : '';
+    const mv = s.move || {};
+    const m = MOVE[mv.mode];
+    const ctx = [];
+    if (mv.text) ctx.push(`일정 메모: ${mv.text}`);
+    const r = s.route && prev && s.route.from === prev.id ? s.route : null;
+    if (r && r.steps && r.steps.length) ctx.push(`고덕 경로: ${r.steps.map(x => `${x.line} ${x.from}→${x.to}`).join(', ')}`);
+    if (prev && prev.station) ctx.push(`출발지 근처 지하철역: ${prev.station}`);
+    if (s.station) ctx.push(`목적지 근처 지하철역: ${s.station}`);
+    if (s.addr) ctx.push(`목적지 주소: ${s.addr}`);
+    const d = day || (this.data.days || []).find(x => (x.tracks || []).some(t => (t.stops || []).includes(s)));
+    return buildPrompt({
+      from: prev ? place(prev) : '현재 위치',
+      to: place(s),
+      mode: m && mv.mode !== 'none' ? m.label : '',
+      when: [d && d.date ? mdLabel(d.date) : '', s.time || ''].filter(Boolean).join(' '),
+      context: [...ctx, ...this.tripContext()],
+      question: mv.mode === 'train'
+        ? '이 기차 구간을 처음 타. 출발역에서 몇 층으로 가서 어떻게 타는지, 도착역에서 어떻게 나가서 다음 교통수단을 타는지 알려줘.'
+        : '출발지에서 목적지까지 가장 쉬운 방법과, 정류장·역·출구에서 길을 잃지 않게 단계별로 알려줘.',
+    });
+  }
+
+  // 정원 내부 동선: 개략도(위에 고정) + 번호 순서 목록 — 서로 누르면 연결돼서 표시
+  openSite(site) {
+    const lo = this.linkOpts();
+    const ctx = this.richCtx();
+    const items = [];
+    const mapBox = h('div', { class: 'site-map' });
+    const zoomBtn = h('button', { class: 'btn sm site-zoom', type: 'button' }, '🔍 크게');
+    const pick = (i, fromMap) => {
+      svg.querySelectorAll('.sm-spot.on').forEach(x => x.classList.remove('on'));
+      const g = svg.querySelector(`.sm-spot[data-i="${i}"]`);
+      if (g) g.classList.add('on');
+      items.forEach((li, k) => li.classList.toggle('on', k === i));
+      if (fromMap && items[i]) items[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // 크게 보기 중이면 지도를 그 지점으로 이동
+      const sp = site.spots[i];
+      if (!fromMap && sp && mapBox.classList.contains('zoom')) {
+        const w = svg.clientWidth;
+        const hgt = svg.clientHeight;
+        mapBox.scrollTo({ left: sp.x / 400 * w - mapBox.clientWidth / 2, top: sp.y / (site.h || 260) * hgt - mapBox.clientHeight / 2, behavior: 'smooth' });
+      }
+    };
+    const svg = siteMapSvg(site, { onSpot: i => pick(i, true) });
+    mapBox.append(svg);
+    zoomBtn.addEventListener('click', () => {
+      const on = mapBox.classList.toggle('zoom');
+      zoomBtn.textContent = on ? '↩ 원래 크기' : '🔍 크게';
+    });
+    const list = h('ol', { class: 'site-list' });
+    site.spots.forEach((s, i) => {
+      const li = h('li', { class: `site-item ${s.must ? 'must' : ''}`, onclick: e => { if (!e.target.closest('.zh-chip')) pick(i, false); } },
+        h('span', { class: 'si-num' }, i === 0 ? '🚪' : String(i)),
+        h('div', { class: 'si-body' },
+          h('div', { class: 'si-name' }, h('b', null, s.ko), ' ', inline(`{zh:${s.zh}}`, ctx), s.must ? h('span', { class: 'si-must' }, '★ 꼭 보기') : null),
+          h('div', { class: 'si-desc' }, inline(s.desc, ctx)),
+          h('a', { class: 'si-photo', href: photoUrl(i === 0 ? `${site.zh} ${s.ko.includes('남문') ? '南门' : '入口'}` : `${site.zh} ${s.zh}`), target: '_blank', rel: 'noopener', onclick: e => e.stopPropagation() }, '📷 사진 보기')));
+      items.push(li);
+      list.append(li);
+    });
+    const body = h('div', { class: 'site-sheet' },
+      h('div', { class: 'site-top' },
+        h('div', null, h('span', { class: 'st-zh', lang: 'zh-CN' }, site.zh), h('span', { class: 'muted small' }, ` ${site.city} · ⏱ ${site.time}`)),
+        h('p', { class: 'site-intro' }, inline(site.intro, ctx))),
+      h('div', { class: 'site-stick' }, mapBox,
+        h('div', { class: 'site-legend' },
+          h('span', null, h('i', { class: 'lg-route' }), '추천 동선'),
+          h('span', null, h('i', { class: 'lg-dot' }), '순서'),
+          h('span', null, h('i', { class: 'lg-must' }), '꼭 볼 곳'),
+          site.wc && site.wc.length ? h('span', null, h('i', { class: 'lg-wc' }, 'WC'), '화장실') : null,
+          zoomBtn)),
+      list,
+      h('div', { class: 'note-box' }, h('ul', { class: 'rt-ul' }, site.tips.map(t => h('li', null, inline(t, ctx))))),
+      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 직접 그린 개략도라 실제 축척·모양과 달라요. 번호나 이름을 누르면 지도와 목록이 서로 표시돼요. 공사·통제로 길이 막히면 현장 안내판(导览图)을 따라가세요.`));
+    openSheet({
+      title: `🗺️ ${site.name} 내부 동선`,
+      body,
+      full: true,
+      className: 'site-sheet-wrap',
+      actions: [
+        h('a', { class: 'btn', ...this.linkAttrs(MAP.search({ zh: site.zh }, lo)) }, `🗺️ ${MAP.name}에서 보기`),
+        h('button', {
+          class: 'btn', type: 'button',
+          onclick: () => this.openAskAI(buildPrompt({
+            to: `${site.zh} (${site.city})`,
+            context: [`추천 동선: ${site.spots.map(s => s.zh).join(' → ')}`],
+            question: `${site.zh} 안을 처음 둘러봐. 위 동선이 맞는지, 놓치면 아까운 곳과 사진 포인트, 화장실·출구 위치, 시간이 부족할 때 줄이는 방법을 알려줘.`,
+          })),
+        }, '🤖 AI에게 더 묻기'),
+      ],
+    });
+  }
+
+  // 질문 미리보기 → 복사 + AI 열기
+  openAskAI(prompt) {
+    const ta = h('textarea', { class: 'inp ai-prompt', rows: 12 });
+    ta.value = prompt;
+    const open = t => {
+      const text = ta.value.trim();
+      copyText(text);
+      window.open(t.url(text), '_blank', 'noopener');
+    };
+    openSheet({
+      title: '🤖 AI에게 묻기',
+      full: true,
+      className: 'ai-sheet',
+      body: h('div', { class: 'editor' },
+        h('p', { class: 'muted small' }, '아래 질문을 고쳐도 돼요. 버튼을 누르면 질문이 복사되고 AI가 열려요 (질문이 안 들어가 있으면 붙여넣기). AI 답은 틀릴 수 있으니 층·출구 번호는 현장 표지판으로 꼭 확인하세요.'),
+        ta,
+        h('p', { class: 'muted small' }, '중국 현지 와이파이/유심에서는 ChatGPT·Claude가 막혀요 (한국 로밍은 OK). 그럴 땐 [질문 복사] 후 豆包·DeepSeek 같은 중국 AI에 붙여넣기.')),
+      actions: [
+        ...AI_TARGETS.map(t => h('button', { class: 'btn primary', type: 'button', onclick: () => open(t) }, t.label)),
+        h('button', { class: 'btn', type: 'button', onclick: () => this.copy(ta.value.trim(), 'AI 앱에 붙여넣기') }, '질문 복사'),
+      ],
+    });
   }
 
   // ── 정보 탭 ───────────────────────────────────────────
