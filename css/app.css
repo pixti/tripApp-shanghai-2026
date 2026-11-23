@@ -491,3 +491,24 @@ html, body { overscroll-behavior-x: none; } /* 옆으로 밀 때 브라우저 �
 .si-desc { font-size: 15px; line-height: 1.6; }
 .si-photo { font-size: 13.5px; }
 .site-intro { font-size: 14.5px; }
+
+/* ── 화면 고정: 위쪽 바는 그대로, 내용만 스크롤 (휴대폰 주소창이 들락날락하지 않게) ── */
+#app { position: fixed; inset: 0; display: flex; flex-direction: column; }
+#app > .sticky { position: relative; flex: none; }
+.scroller { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+.stop { scroll-margin-top: 12px; }
+
+/* 정원 시트: 지도는 위에 고정, 목록만 스크롤 */
+.site-sheet-wrap .sheet-body { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
+.site-sheet-wrap .site-sheet { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.site-sheet-wrap .site-stick { position: static; flex: none; margin: 0; padding: 0; }
+.site-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; display: flex; flex-direction: column; gap: 10px; padding: 4px 2px 16px; border-top: 1px solid var(--line); }
+
+/* 장소 사진 */
+.photo { margin: 10px 0 0 48px; }
+.photo img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; background: var(--chip); cursor: zoom-in; }
+.photo figcaption { margin-top: 3px; font-size: 11px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.photo figcaption a { color: inherit; }
+.site-photo { margin: 0; }
+.photo-big img { display: block; width: 100%; border-radius: 12px; }
+.loc-help { display: flex; flex-direction: column; gap: 10px; }

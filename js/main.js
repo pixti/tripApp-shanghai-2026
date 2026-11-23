@@ -25,9 +25,11 @@ function registerSW() {
     });
     setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
   }).catch(e => console.warn('SW', e));
+  // 처음 설치될 때는 새로고침하지 않음 (비밀번호 입력 중에 지워지지 않게) — 업데이트일 때만
+  const hadController = !!navigator.serviceWorker.controller;
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloading) return;
+    if (!hadController || reloading) return;
     reloading = true;
     location.reload();
   });

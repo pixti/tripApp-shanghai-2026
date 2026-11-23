@@ -11,6 +11,7 @@ import { CAT, MOVE } from './consts.js';
 import { distM } from './gcj.js';
 import { GUIDE_ASOF, TRAIN_STEPS, STATIONS, SECTIONS, AI_TARGETS, findStation, buildPrompt, photoUrl, STATION_PHOTOS } from './guide.js';
 import { SITES, findSite, siteMapSvg } from './sites.js';
+import { findPhoto, photoPath } from './photos.js';
 
 const SYNC_TEXT = {
   idle: ['●', '대기', 's-idle'],
@@ -77,7 +78,7 @@ export class App {
       h('p', { class: 'map-note' }, '핀 번호는 일정 순서예요. 점선은 순서만 이은 것이고 실제 경로가 아니에요 — 경로는 구간마다 있는 [경로]나 [길찾기]로 보세요.'));
     this.el.dayView.append(this.el.dayHead, this.el.tracks, this.el.mapCard, this.el.list);
     root.append(h('div', { class: 'sticky' }, this.el.header, this.el.tabs),
-      h('main', { class: 'main' }, this.el.loading, this.el.dayView, this.el.otherView),
+      this.el.scroller = h('div', { class: 'scroller' }, h('main', { class: 'main' }, this.el.loading, this.el.dayView, this.el.otherView)),
       this.el.nextBar);
     this.mapEl = mapEl;
 
@@ -170,7 +171,7 @@ export class App {
     this.renderHeader();
     sessionStorage.setItem('tp.tab', id);
     this.render();
-    window.scrollTo({ top: 0 });
+    this.el.scroller.scrollTop = 0;
   }
 
   // ── 머리 ──────────────────────────────────────────────
@@ -511,6 +512,9 @@ export class App {
         onclick: () => this.store.toggleDone(s.id),
       }, done ? '✓' : '')));
 
+    const ph = findPhoto(s);
+    if (ph) card.append(this.photoFigure(ph, 'stop-photo'));
+
     const meta = [];
     if (s.time) meta.push(h('span', { class: 'time' }, '⏰ ', s.time));
     meta.push(h('span', { class: 'cat' }, `${cat.icon} ${cat.label}`));
@@ -624,6 +628,64 @@ export class App {
     card.classList.add('flash');
   }
 
+
+  // 장소 사진 + 출처 (누르면 크게)
+  photoFigure(ph, cls = '') {
+    return h('figure', { class: `photo ${cls}` },
+      h('img', { src: photoPath(ph), alt: ph.alt, loading: 'lazy', decoding: 'async', onclick: () => this.openPhoto(ph) }),
+      h('figcaption', null, '📷 ', h('a', { href: ph.src, target: '_blank', rel: 'noopener' }, `${ph.author} · ${ph.license}`), ' · 위키미디어 공용'));
+  }
+
+  openPhoto(ph) {
+    openSheet({
+      title: `📷 ${ph.alt}`,
+      full: true,
+      className: 'photo-sheet',
+      body: h('div', { class: 'photo-big' },
+        h('img', { src: photoPath(ph), alt: ph.alt }),
+        h('p', { class: 'muted small' }, '사진: ', h('a', { href: ph.src, target: '_blank', rel: 'noopener' }, ph.author), ` · ${ph.license} · 위키미디어 공용 (찍은 때와 지금 모습이 다를 수 있어요)`)),
+    });
+  }
+
+  // 위치 권한 켜는 법 (기기별)
+  openLocationHelp() {
+    const UA = navigator.userAgent || '';
+    const tabs = [
+      ['android', '안드로이드', [
+        '휴대폰 **위치(GPS)** 가 켜져 있는지 확인 — 화면 위에서 아래로 내려 빠른 설정의 **위치** 켜기',
+        '크롬 주소창 왼쪽 **조정 아이콘(또는 자물쇠)** → **권한** → **위치** → **허용**',
+        '또는 크롬 **⋮ → 설정 → 사이트 설정 → 위치** → 이 사이트(pixti.github.io)를 **허용**',
+        '**홈 화면에 설치한 앱**이면: 앱 아이콘 길게 누르기 → **앱 정보** → **권한** → **위치 → 앱 사용 중에만 허용**',
+        '그래도 안 되면: 휴대폰 **설정 → 애플리케이션 → Chrome → 권한 → 위치 → 앱 사용 중에만 허용**',
+        '바꾼 뒤 앱으로 돌아와 **◎ 내 위치**를 다시 누르기',
+      ]],
+      ['iphone', '아이폰', [
+        '**설정 → 개인정보 보호 및 보안 → 위치 서비스** 켜기',
+        '같은 화면 아래 **Safari 웹 사이트** → **앱을 사용하는 동안** + **정확한 위치** 켜기',
+        '사파리에서 주소창 왼쪽 **가가(aA)** → **웹 사이트 설정** → **위치** → **허용**',
+        '홈 화면에 추가한 앱은 처음 누를 때 물어봐요 → **허용**',
+        '바꾼 뒤 앱으로 돌아와 **◎ 내 위치**를 다시 누르기',
+      ]],
+      ['pc', '컴퓨터', [
+        '크롬 **⋮ → 설정 → 개인 정보 보호 및 보안 → 사이트 설정 → 위치** → 이 사이트를 **허용**',
+        '윈도우: **설정 → 개인 정보 및 보안 → 위치** → 위치 서비스·앱의 위치 액세스 켜기',
+        '맥: **시스템 설정 → 개인정보 보호 및 보안 → 위치 서비스** → Chrome 켜기',
+        'PC는 GPS가 없어서 위치가 수백 m 틀릴 수 있어요',
+      ]],
+    ];
+    let cur = /iPhone|iPad/.test(UA) ? 'iphone' : /Android/.test(UA) ? 'android' : 'pc';
+    const body = h('div', { class: 'loc-help' });
+    const draw = () => {
+      clear(body).append(
+        h('p', null, inline('지도에 내 위치를 보려면 이 앱에 **위치 권한**이 필요해요. 쓰는 기기를 고르세요.')),
+        h('div', { class: 'seg' }, tabs.map(([id, label]) => h('button', { class: `seg-btn ${cur === id ? 'on' : ''}`, type: 'button', onclick: () => { cur = id; draw(); } }, label))),
+        this.stepList(tabs.find(t => t[0] === cur)[2]),
+        h('p', { class: 'muted small' }, '위치 정보는 내 폰 지도에만 쓰이고 어디에도 저장·전송되지 않아요.'));
+    };
+    draw();
+    openSheet({ title: '📍 위치 권한 켜는 법', body, full: true });
+  }
+
   // ── 지도 ──────────────────────────────────────────────
   renderMap(day, track, stops, next) {
     if (!this.map) {
@@ -659,7 +721,8 @@ export class App {
       return;
     }
     this.map.startLocate(pos => { this.myPos = pos; this.updateNextDist(); }, msg => {
-      toast(msg, { ms: 4000 });
+      if (/권한/.test(msg)) this.openLocationHelp();
+      else toast(`${msg} — 실내라면 창가로, 휴대폰 위치(GPS)가 켜져 있는지 확인하세요`, { ms: 4500 });
       this.render();
     });
     this.render();
@@ -726,7 +789,8 @@ export class App {
     v.append(h('div', { class: 'card guide-intro' },
       h('h3', null, '🧭 중국 처음이라면'),
       h('p', null, '기차·지하철 타는 순서, 역 안에서 몇 층으로 가는지, 갑자기 나오는 짐검사까지 정리했어요. 중국어 글자는 누르면 복사, ⤢ 누르면 크게 보여줘요.'),
-      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 역 구조·규정은 바뀔 수 있으니 현장 표지판과 직원 안내가 우선이에요.`)));
+      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 역 구조·규정은 바뀔 수 있으니 현장 표지판과 직원 안내가 우선이에요.`),
+      h('button', { class: 'btn sm', type: 'button', onclick: () => this.openLocationHelp() }, '📍 내 위치가 안 나올 때 (위치 권한 켜는 법)')));
 
     // 기차 타는 법
     const train = h('details', { class: 'card info-sec', open: this.guideOpen ? this.guideOpen.has('train') : true },
@@ -794,6 +858,7 @@ export class App {
       ? h('details', { class: 'st-part', open: !focus || focus === key }, h('summary', null, title), this.stepList(st[key]))
       : null;
     const body = h('div', { class: 'st-sheet' },
+      (ph => ph ? this.photoFigure(ph, 'site-photo') : null)(findPhoto({ zh: st.zh, cat: 'station' })),
       h('div', { class: 'st-head' },
         h('div', { class: 'st-zh', lang: 'zh-CN' }, st.zh),
         h('div', { class: 'muted small' }, st.sub)),
@@ -926,10 +991,17 @@ export class App {
       items.push(li);
       list.append(li);
     });
-    const body = h('div', { class: 'site-sheet' },
+    const sph = findPhoto({ zh: site.zh, cat: 'sight' });
+    const scroll = h('div', { class: 'site-scroll' },
       h('div', { class: 'site-top' },
         h('div', null, h('span', { class: 'st-zh', lang: 'zh-CN' }, site.zh), h('span', { class: 'muted small' }, ` ${site.city} · ⏱ ${site.time}`)),
         h('p', { class: 'site-intro' }, inline(site.intro, ctx))),
+      sph ? this.photoFigure(sph, 'site-photo') : null,
+      list,
+      h('div', { class: 'note-box' }, h('ul', { class: 'rt-ul' }, site.tips.map(t => h('li', null, inline(t, ctx))))),
+      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 직접 그린 개략도라 실제 축척·모양과 달라요. 번호나 이름을 누르면 지도와 목록이 서로 표시돼요. 공사·통제로 길이 막히면 현장 안내판(导览图)을 따라가세요.`));
+    // 지도는 위에 항상 고정, 아래 목록만 스크롤
+    const body = h('div', { class: 'site-sheet' },
       h('div', { class: 'site-stick' }, mapBox,
         h('div', { class: 'site-legend' },
           h('span', null, h('i', { class: 'lg-route' }), '추천 동선'),
@@ -937,9 +1009,7 @@ export class App {
           h('span', null, h('i', { class: 'lg-must' }), '꼭 볼 곳'),
           site.wc && site.wc.length ? h('span', null, h('i', { class: 'lg-wc' }, 'WC'), '화장실') : null,
           h('span', { class: 'site-btns' }, foldBtn, zoomBtn))),
-      list,
-      h('div', { class: 'note-box' }, h('ul', { class: 'rt-ul' }, site.tips.map(t => h('li', null, inline(t, ctx))))),
-      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 직접 그린 개략도라 실제 축척·모양과 달라요. 번호나 이름을 누르면 지도와 목록이 서로 표시돼요. 공사·통제로 길이 막히면 현장 안내판(导览图)을 따라가세요.`));
+      scroll);
     setFold(localStorage.getItem('tp.siteFold') === '1');
     openSheet({
       title: `🗺️ ${site.name} 내부 동선`,
@@ -1200,6 +1270,9 @@ export class App {
       MAP.id === 'amap' ? h('label', { class: 'set-label' }, '고덕 길찾기 여는 방식') : null,
       MAP.id === 'amap' ? seg('linkMode', [['app', '고덕 앱 바로 열기'], ['web', '웹페이지로 열기']]) : null,
       MAP.id === 'amap' ? h('p', { class: 'muted' }, '안드로이드 폰에서는 고덕 앱이 바로 열려요. 아이폰·PC는 웹 고덕지도로 열리고, 앱이 깔려 있으면 거기서 앱으로 넘어가요. 안 열리면 "웹페이지로 열기"로 바꿔 보세요.') : null,
+
+      h('label', { class: 'set-label' }, '내 위치'),
+      h('button', { class: 'btn sm', type: 'button', onclick: () => { sheet.close(); setTimeout(() => this.openLocationHelp(), 120); } }, '📍 위치 권한 켜는 법'),
 
       h('label', { class: 'set-label' }, '지도 글자'),
       seg('lang', [['zh', '중문'], ['en', '영문']]),

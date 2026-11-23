@@ -182,8 +182,8 @@ async function main() {
   await A.waitFor(`document.querySelector('.dh-title').textContent === '조계지'`);
   await A.idle(1200);
   await A.shot('02-day3.png');
-  assert.equal(await A.eval(`document.querySelectorAll('.stop').length`), 10);
-  log('Day3 탭 이동 (10곳)');
+  assert.equal(await A.eval(`document.querySelectorAll('.stop').length`), 9);
+  log('Day3 탭 이동 (9곳)');
 
   // 다음 목적지 바 + 완료 체크
   assert.ok((await A.eval(`document.querySelector('.nb-name').textContent`)).startsWith('1.'));
@@ -193,18 +193,18 @@ async function main() {
   log('완료 체크 → 다음 목적지가 2번으로');
 
   // 중국어 복사 (고덕 붙여넣기용) + 가까운 역
-  assert.ok((await A.eval(`document.querySelector('#stop-d3-05 .actions').textContent`)).includes('중국어 복사'));
-  assert.equal(await A.eval(`document.querySelector('#stop-d3-05 .st-name').textContent`), '静安寺站');
-  await A.clickText('#stop-d3-05 .actions button.btn', '중국어 복사');
+  assert.ok((await A.eval(`document.querySelector('#stop-d3-06 .actions').textContent`)).includes('중국어 복사'));
+  assert.equal(await A.eval(`document.querySelector('#stop-d3-06 .st-name').textContent`), '交通大学站');
+  await A.clickText('#stop-d3-06 .actions button.btn', '중국어 복사');
   await A.waitFor(`document.querySelector('#toast').textContent.includes('복사')`, 5000, '복사 안내');
-  log('중국어 복사 버튼 + 가까운 역(静安寺站) 표시');
+  log('중국어 복사 버튼 + 가까운 역(交通大学站) 표시');
   // 중국어 크게 보여주기 (⋯ 메뉴)
-  await A.click('#stop-d3-05 .actions .btn.icon');
+  await A.click('#stop-d3-06 .actions .btn.icon');
   await A.waitFor(`!!document.querySelector('.menu')`);
   await A.clickText('.menu-item', '크게 보여주기');
   await A.waitFor(`!document.querySelector('.menu')`, 5000, '메뉴 닫힘');
   await A.waitFor(`!!document.querySelector('.zh-big')`, 8000, '크게 보기');
-  assert.equal(await A.eval(`document.querySelector('.zh-big').textContent`), '静安寺');
+  assert.equal(await A.eval(`document.querySelector('.zh-big').textContent`), '武康大楼');
   await A.idle(400);
   await A.shot('03-zh.png');
   await A.eval('history.back()');
@@ -236,7 +236,7 @@ async function main() {
     await A.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await A.idle(400);
   };
-  await A.eval('window.scrollTo(0,0)');
+  await A.eval(`document.querySelector('.scroller').scrollTo(0,0)`);
   await swipe(330, 110);
   assert.equal(await A.eval(`document.querySelector('.dh-sub').textContent.startsWith('DAY 4')`), true, '왼쪽으로 밀면 다음 날');
   await swipe(110, 330);
@@ -281,14 +281,14 @@ async function main() {
   await A.clickText('.tab', 'Day 5');
   await A.waitFor(`!!document.querySelector('#stop-d5-08')`, 5000, 'Day5 동방지문');
   assert.equal(await A.eval(`document.querySelectorAll('.badge.review').length`), 0, 'Day5 검토 필요 표시 남음');
-  assert.equal(await A.eval(`document.querySelectorAll('.stop').length`), 11);
+  assert.equal(await A.eval(`document.querySelectorAll('.stop').length`), 12);
   await A.idle(1500);
   await A.shot('08-day5.png');
-  await A.eval(`document.querySelector('#stop-d5-05').scrollIntoView({block:'start'}); window.scrollBy(0,-130)`);
+  await A.eval(`document.querySelector('#stop-d5-05').scrollIntoView({block:'start'})`);
   await A.idle(500);
   await A.shot('08b-day5-food.png');
   // 둘러보기·역사 가이드
-  await A.eval(`(() => { const d = document.querySelector('#stop-d5-04 details.tmi'); d.open = true; d.scrollIntoView({block:'start'}); window.scrollBy(0,-120); })()`);
+  await A.eval(`(() => { const d = document.querySelector('#stop-d5-04 details.tmi'); d.open = true; d.scrollIntoView({block:'start'}); })()`);
   await A.idle(400);
   assert.ok((await A.eval(`document.querySelector('#stop-d5-04 .tmi-body').textContent`)).includes('추천 동선'));
   assert.ok(!(await A.eval(`document.querySelector('#stop-d5-04 .tmi-body').textContent`)).includes('{zh:'), '가이드에 {zh: 글자 남음');
@@ -297,6 +297,7 @@ async function main() {
   await A.clickText('.tab', '정보');
   await A.idle(400);
   await A.shot('09-info.png');
+  await A.idle(2500); // 오늘 환율 받아오기가 끝난 뒤 계산 (타이밍 겹침 방지)
   await A.eval(`(() => { const i = document.querySelector('.conv-in'); i.value = '34.9'; i.dispatchEvent(new Event('input')); })()`);
   {
     const rate = await A.eval(`parseFloat(document.querySelector('.conv-title small').textContent.match(/= ([0-9.]+)원/)[1])`);
@@ -317,11 +318,11 @@ async function main() {
   await unlock(B, P2);
   log('두 번째 기기(서준) 잠금 해제');
 
-  // A: 편집 모드 → Day3 정안사 시간 수정
+  // A: 편집 모드 → Day3 우캉맨션 시간 수정
   await A.clickText('.tab', 'Day 3');
   await A.click('.edit-toggle');
-  await A.waitFor(`!!document.querySelector('#stop-d3-05 .edit-row')`);
-  await A.clickText('#stop-d3-05 .edit-row .btn', '수정');
+  await A.waitFor(`!!document.querySelector('#stop-d3-06 .edit-row')`);
+  await A.clickText('#stop-d3-06 .edit-row .btn', '수정');
   await A.waitFor(`!!document.querySelector('.editor .inp')`);
   await A.waitFor(`document.querySelectorAll('.picker-map .leaflet-tile-loaded').length > 3`, 15000, '편집 지도 타일');
   await A.idle(1500);
@@ -329,12 +330,12 @@ async function main() {
   await A.eval(`(() => { const f = [...document.querySelectorAll('.editor .fld')].find(x => x.textContent.startsWith('시간')); const i = f.querySelector('input'); i.value = '15:30'; i.dispatchEvent(new Event('input')); return true; })()`);
   await A.clickText('.sheet-actions .btn', '저장');
   await A.waitFor(`(async () => (await (await fetch('/__gh/_state')).json()).puts.length === 1)()`, 10000, 'A 저장');
-  log('A가 정안사 시간 15:30으로 수정 → 저장됨');
+  log('A가 우캉맨션 시간 15:30으로 수정 → 저장됨');
 
   // B: 30초 폴링 대신 화면 복귀 이벤트로 새로고침
   await B.eval(`document.dispatchEvent(new Event('visibilitychange'))`);
   await B.clickText('.tab', 'Day 3');
-  await B.waitFor(`document.querySelector('#stop-d3-05 .time') && document.querySelector('#stop-d3-05 .time').textContent.includes('15:30')`, 10000, 'B에 반영');
+  await B.waitFor(`document.querySelector('#stop-d3-06 .time') && document.querySelector('#stop-d3-06 .time').textContent.includes('15:30')`, 10000, 'B에 반영');
   log('B 화면에 A의 수정이 반영됨');
 
   // 동시에 수정 (가짜 저장소 응답을 느리게 해서 충돌 유도)
@@ -351,8 +352,8 @@ async function main() {
   await B.waitFor(`document.querySelector('.sync').className.includes('s-ok')`, 15000, 'B 동기화 완료');
   const remote = await remoteData();
   const d3 = remote.days.find(d => d.id === 'd3').tracks[0].stops;
-  assert.equal(d3.find(s => s.id === 'd3-05').time, '15:30', 'A의 첫 수정 유지');
-  assert.equal(d3[5].id, 'd3-07', 'A의 순서 변경 반영');
+  assert.equal(d3.find(s => s.id === 'd3-06').time, '15:30', 'A의 첫 수정 유지');
+  assert.equal(d3[3].id, 'd3-07', 'A의 순서 변경 반영');
   assert.equal(remote.checklist.find(c => c.id === 'c-yuyuan').done, true, 'B의 체크 반영');
   assert.equal(remote.checklist.find(c => c.id === 'c-yuyuan').doneBy, P2);
   const st = await mockState();

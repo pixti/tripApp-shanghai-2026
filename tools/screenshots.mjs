@@ -33,13 +33,13 @@ try {
   await sleep(500);
   await tab('Day 3'); await tiles();
   await shot('1-day.png');
-  await ev(`(() => { const m = document.querySelector('.move.has-route'); m.scrollIntoView({ block: 'start' }); window.scrollBy(0, -150); })()`);
+  await ev(`(() => { const m = document.querySelector('.move.has-route'); m.scrollIntoView({ block: 'start' }); })()`);
   await shot('2-route.png');
   await tab('Day 5'); await tiles();
-  await ev(`(() => { const d = document.querySelector('#stop-d5-04 details.tmi'); d.open = true; d.scrollIntoView({ block: 'start' }); window.scrollBy(0, -140); })()`);
+  await ev(`(() => { const d = document.querySelector('#stop-d5-04 details.tmi'); d.open = true; d.scrollIntoView({ block: 'start' }); })()`);
   await shot('3-guide.png');
   await tab('Day 3'); await sleep(800);
-  await ev(`[...document.querySelectorAll('#stop-d3-05 .actions .btn')].find(b => b.textContent.includes('⋯')).click()`);
+  await ev(`[...document.querySelectorAll('#stop-d3-06 .actions .btn')].find(b => b.textContent.includes('⋯')).click()`);
   await wait(`!!document.querySelector('.menu')`);
   await ev(`[...document.querySelectorAll('.menu-item')].find(b => b.textContent.includes('크게 보여주기')).click()`);
   await wait(`!!document.querySelector('.zh-big')`);
@@ -48,11 +48,11 @@ try {
   await tab('예약');
   await wait(`!!document.querySelector('.check-who')`);
   await ev(`[...document.querySelectorAll('.check-who .seg-btn')][0].click()`);
-  await ev(`(() => { const g = [...document.querySelectorAll('.group-title')].find(x => x.textContent.includes('오픈 예정')); if (g) { g.scrollIntoView({ block: 'start' }); window.scrollBy(0, -150); } })()`);
+  await ev(`(() => { const g = [...document.querySelectorAll('.group-title')].find(x => x.textContent.includes('오픈 예정')); if (g) { g.scrollIntoView({ block: 'start' }); } })()`);
   await shot('5-booking.png');
   await tab('정보');
   await wait(`!!document.querySelector('.conv-in')`);
-  await ev(`(() => { const i = document.querySelector('.conv-in'); i.value = '128'; i.dispatchEvent(new Event('input')); window.scrollTo(0, 0); })()`);
+  await ev(`(() => { const i = document.querySelector('.conv-in'); i.value = '128'; i.dispatchEvent(new Event('input')); document.querySelector('.scroller').scrollTo(0, 0); })()`);
   await shot('6-info.png');
 } catch (e) { console.error('  ✖', e.message); process.exitCode = 1; }
 cleanup(); process.exit();
