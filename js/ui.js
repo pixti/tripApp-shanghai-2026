@@ -886,11 +886,20 @@ export class App {
     const items = [];
     const mapBox = h('div', { class: 'site-map' });
     const zoomBtn = h('button', { class: 'btn sm site-zoom', type: 'button' }, '🔍 크게');
+    const foldBtn = h('button', { class: 'btn sm site-fold', type: 'button' });
+    const setFold = on => {
+      mapBox.classList.toggle('folded', on);
+      foldBtn.textContent = on ? '🗺️ 지도 펼치기' : '▲ 지도 접기';
+      zoomBtn.hidden = on;
+      localStorage.setItem('tp.siteFold', on ? '1' : '');
+    };
+    foldBtn.addEventListener('click', () => setFold(!mapBox.classList.contains('folded')));
     const pick = (i, fromMap) => {
       svg.querySelectorAll('.sm-spot.on').forEach(x => x.classList.remove('on'));
       const g = svg.querySelector(`.sm-spot[data-i="${i}"]`);
       if (g) g.classList.add('on');
       items.forEach((li, k) => li.classList.toggle('on', k === i));
+      if (!fromMap && mapBox.classList.contains('folded')) setFold(false);
       if (fromMap && items[i]) items[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
       // 크게 보기 중이면 지도를 그 지점으로 이동
       const sp = site.spots[i];
@@ -927,10 +936,11 @@ export class App {
           h('span', null, h('i', { class: 'lg-dot' }), '순서'),
           h('span', null, h('i', { class: 'lg-must' }), '꼭 볼 곳'),
           site.wc && site.wc.length ? h('span', null, h('i', { class: 'lg-wc' }, 'WC'), '화장실') : null,
-          zoomBtn)),
+          h('span', { class: 'site-btns' }, foldBtn, zoomBtn))),
       list,
       h('div', { class: 'note-box' }, h('ul', { class: 'rt-ul' }, site.tips.map(t => h('li', null, inline(t, ctx))))),
       h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 직접 그린 개략도라 실제 축척·모양과 달라요. 번호나 이름을 누르면 지도와 목록이 서로 표시돼요. 공사·통제로 길이 막히면 현장 안내판(导览图)을 따라가세요.`));
+    setFold(localStorage.getItem('tp.siteFold') === '1');
     openSheet({
       title: `🗺️ ${site.name} 내부 동선`,
       body,

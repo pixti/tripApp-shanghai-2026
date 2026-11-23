@@ -480,3 +480,14 @@ html, body { overscroll-behavior-x: none; } /* 옆으로 밀 때 브라우저 �
 .si-desc { font-size: 13.5px; color: #30343b; margin-top: 3px; line-height: 1.55; }
 .photo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .si-photo { display: inline-block; margin-top: 4px; font-size: 12.5px; text-decoration: none; color: var(--blue-d); }
+/* 동선 지도: 위에 고정되는 지도는 화면의 36%까지만, 접기 가능 */
+.site-map:not(.zoom) .site-svg { max-height: 36vh; }
+.site-map.zoom { max-height: 40vh; }
+.site-map.folded { display: none; }
+.site-btns { margin-left: auto; display: inline-flex; gap: 6px; }
+.site-btns .site-zoom { margin-left: 0; }
+.site-fold { min-height: 28px; padding: 3px 9px; }
+.si-name { font-size: 16px; }
+.si-desc { font-size: 15px; line-height: 1.6; }
+.si-photo { font-size: 13.5px; }
+.site-intro { font-size: 14.5px; }
