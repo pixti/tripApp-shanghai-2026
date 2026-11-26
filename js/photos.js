@@ -1,5 +1,6 @@
 // 장소 사진 — 위키미디어 공용의 자유 라이선스 사진을 앱에 넣어 둠 (오프라인에서도 보임)
-//  match: 장소 중국어 이름(zh)에 맞추는 패턴. 식당·숙소에는 붙이지 않음.
+//  match: 장소 중국어 이름(zh)에 맞추는 패턴. 숙소·이동 구간에는 자동으로 붙이지 않음.
+//  자유 라이선스 사진이 없는 곳은 일정 데이터(암호화)에 stop.photo 로 직접 넣음 (공개 저장소에 안 올라감)
 //  출처·라이선스는 사진 아래에 표시 (CC BY/BY-SA는 저작자 표시 필요)
 export const PHOTOS = [
   { id: 'bund', match: /^外滩$/, alt: "와이탄", author: "Ermell", license: "CC BY-SA 4.0", src: "https://commons.wikimedia.org/wiki/File:Shanghai_Bund-20150516-RM-173803.jpg" },
@@ -29,9 +30,15 @@ export const PHOTOS = [
   { id: 'pvg', match: /浦东国际机场/, alt: "푸동공항 T1", author: "そらみみ", license: "CC BY-SA 4.0", src: "https://commons.wikimedia.org/wiki/File:Terminal_1_of_Shanghai_Pudong_International_Airport_from_Pudong_International_Airport_Station_(Shanghai_Maglev).jpg" },
   { id: 'hzkpg', match: /杭州旧址/, alt: "항저우 임시정부 구지", author: "Yumeto", license: "CC BY-SA 4.0", src: "https://commons.wikimedia.org/wiki/File:20230629_Dahan_Minguo_Linshi_Zhengfu_Hangzhou_Jiuzhi_Jinianguan_(103355).jpg" },
   { id: 'hefang', match: /河坊街/, alt: "허팡제", author: "钉钉", license: "CC BY-SA 4.0", src: "https://commons.wikimedia.org/wiki/File:Hefang_Street,_Hangzhou.jpg" },
+  { id: 'nanxiang', match: /南翔馒头店/, alt: "남상만두 샤오룽바오", author: "Eason Lai from 上海", license: "CC BY-SA 2.0", src: "https://commons.wikimedia.org/wiki/File:Xiao_Long_Bao_at_Nanxiang_Mantou_Dian_1.jpg" },
+  { id: 'haidilao', match: /海底捞/, alt: "하이디라오 (다른 지점 사진)", author: "Shwangtianyuan", license: "CC BY-SA 4.0", src: "https://commons.wikimedia.org/wiki/File:Haidilao_in_Suzhou.jpg" },
+  { id: 'joycity', match: /静安大悦城/, alt: "징안 조이시티", author: "N509FZ", license: "CC BY-SA 4.0", src: "https://commons.wikimedia.org/wiki/File:Shanghai_Jing%27an_Joy_City_(20250611105257).jpg" },
+  { id: 'bailianzx', match: /百联ZX/, alt: "백련 ZX 안 애니메이트 매장", author: "Bechology", license: "CC BY-SA 4.0", src: "https://commons.wikimedia.org/wiki/File:Animate_Shanghai_Flagship_Store_20261021.jpg" },
+  { id: 'lujiazuistn', match: /^陆家嘴\(地铁站\)/, alt: "루자쭈이역 9B 출구", author: "Kmchang28", license: "CC BY-SA 4.0", src: "https://commons.wikimedia.org/wiki/File:Exit_9B_of_Lujiazui_Station_in_Shanghai_2024.jpg" },
+  { id: 'kpgsh', match: /^大韩民国临时政府旧址/, alt: "상하이 임시정부 청사 입구", author: "Ericmetro", license: "CC BY-SA 3.0", src: "https://commons.wikimedia.org/wiki/File:Entrance_wall_of_Provisional_Government_of_ROK_in_Shanghai.JPG" },
 ];
 
-const NO_PHOTO_CAT = new Set(['food', 'hotel', 'transit']);
+const NO_PHOTO_CAT = new Set(['hotel', 'transit']);
 
 export function findPhoto(stop) {
   if (!stop || NO_PHOTO_CAT.has(stop.cat)) return null;

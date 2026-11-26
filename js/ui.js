@@ -11,7 +11,7 @@ import { CAT, MOVE } from './consts.js';
 import { distM } from './gcj.js';
 import { GUIDE_ASOF, TRAIN_STEPS, STATIONS, SECTIONS, AI_TARGETS, findStation, buildPrompt, photoUrl, STATION_PHOTOS } from './guide.js';
 import { SITES, findSite, siteMapSvg } from './sites.js';
-import { findPhoto, photoPath } from './photos.js';
+import { PHOTOS, findPhoto, photoPath } from './photos.js';
 
 const SYNC_TEXT = {
   idle: ['●', '대기', 's-idle'],
@@ -513,7 +513,8 @@ export class App {
       }, done ? '✓' : '')));
 
     // 일정 데이터에 직접 넣은 사진(암호화돼 공개되지 않음)이 있으면 그것, 없으면 앱에 든 자유 라이선스 사진
-    const ph = s.photo ? { data: s.photo, alt: s.name, author: s.photoCredit || '직접 넣은 사진', license: '', src: '' } : findPhoto(s);
+    const ph = s.photo ? { data: s.photo, alt: s.name, author: s.photoCredit || '직접 넣은 사진', license: '', src: '', page: s.photoSrc || '' }
+      : (s.photoRef && PHOTOS.find(x => x.id === s.photoRef)) || findPhoto(s);
     if (ph) card.append(this.photoFigure(ph, 'stop-photo'));
 
     const meta = [];
@@ -636,7 +637,7 @@ export class App {
       h('img', { src: ph.data || photoPath(ph), alt: ph.alt, loading: 'lazy', decoding: 'async', onclick: () => this.openPhoto(ph) }),
       ph.src
         ? h('figcaption', null, '📷 ', h('a', { href: ph.src, target: '_blank', rel: 'noopener' }, `${ph.author} · ${ph.license}`), ' · 위키미디어 공용')
-        : h('figcaption', null, `📷 ${ph.author}`));
+        : h('figcaption', null, '📷 ', ph.page ? h('a', { href: ph.page, target: '_blank', rel: 'noopener' }, `출처: ${ph.author}`) : ph.author));
   }
 
   openPhoto(ph) {
@@ -648,7 +649,7 @@ export class App {
         h('img', { src: ph.data || photoPath(ph), alt: ph.alt }),
         ph.src
           ? h('p', { class: 'muted small' }, '사진: ', h('a', { href: ph.src, target: '_blank', rel: 'noopener' }, ph.author), ` · ${ph.license} · 위키미디어 공용 (찍은 때와 지금 모습이 다를 수 있어요)`)
-          : h('p', { class: 'muted small' }, `사진: ${ph.author}`)),
+          : h('p', { class: 'muted small' }, '사진 ', ph.page ? h('a', { href: ph.page, target: '_blank', rel: 'noopener' }, `출처: ${ph.author}`) : ph.author, ' (개인 여행용으로만 보관)')),
     });
   }
 

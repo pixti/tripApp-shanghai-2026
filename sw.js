@@ -1,11 +1,11 @@
 // 오프라인용 서비스워커: 앱 파일은 저장본 우선, 고덕 지도 타일은 한 번 본 것 저장
-const VERSION = '2026-11-26T23-10-42';
+const VERSION = '2026-11-26T23-23-46';
 const SHELL = `shell-${VERSION}`;
 const TILES = 'tiles-v1';
 const MAX_TILES = 6000;
 // 장소 사진: 앱 버전과 따로 한 번만 저장 (업데이트마다 다시 받지 않음). 사진을 바꾸면 PHOTOS 이름의 숫자를 올리기
 const PHOTOS = 'photos-v1';
-const PHOTO_FILES = ["photos/hefang.jpg","photos/bund.jpg","photos/cruise.jpg","photos/gateeast.jpg","photos/hongqiao.jpg","photos/hzeast.jpg","photos/hzkpg.jpg","photos/lingyin.jpg","photos/liuhe.jpg","photos/liuyuan.jpg","photos/museum.jpg","photos/nanjingrd.jpg","photos/pearl.jpg","photos/peoplesq.jpg","photos/pingjiang.jpg","photos/pvg.jpg","photos/roastery.jpg","photos/shantang.jpg","photos/shstation.jpg","photos/shtower.jpg","photos/sihang.jpg","photos/szstation.jpg","photos/tianzifang.jpg","photos/westlake.jpg","photos/wukang.jpg","photos/yuyuan.jpg","photos/zhuozheng.jpg"];
+const PHOTO_FILES = ["photos/kpgsh.jpg","photos/lujiazuistn.jpg","photos/bailianzx.jpg","photos/joycity.jpg","photos/haidilao.jpg","photos/nanxiang.jpg","photos/hefang.jpg","photos/bund.jpg","photos/cruise.jpg","photos/gateeast.jpg","photos/hongqiao.jpg","photos/hzeast.jpg","photos/hzkpg.jpg","photos/lingyin.jpg","photos/liuhe.jpg","photos/liuyuan.jpg","photos/museum.jpg","photos/nanjingrd.jpg","photos/pearl.jpg","photos/peoplesq.jpg","photos/pingjiang.jpg","photos/pvg.jpg","photos/roastery.jpg","photos/shantang.jpg","photos/shstation.jpg","photos/shtower.jpg","photos/sihang.jpg","photos/szstation.jpg","photos/tianzifang.jpg","photos/westlake.jpg","photos/wukang.jpg","photos/yuyuan.jpg","photos/zhuozheng.jpg"];
 
 const ASSETS = [
   './',
