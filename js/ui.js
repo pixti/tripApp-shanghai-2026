@@ -512,7 +512,8 @@ export class App {
         onclick: () => this.store.toggleDone(s.id),
       }, done ? '✓' : '')));
 
-    const ph = findPhoto(s);
+    // 일정 데이터에 직접 넣은 사진(암호화돼 공개되지 않음)이 있으면 그것, 없으면 앱에 든 자유 라이선스 사진
+    const ph = s.photo ? { data: s.photo, alt: s.name, author: s.photoCredit || '직접 넣은 사진', license: '', src: '' } : findPhoto(s);
     if (ph) card.append(this.photoFigure(ph, 'stop-photo'));
 
     const meta = [];
@@ -632,8 +633,10 @@ export class App {
   // 장소 사진 + 출처 (누르면 크게)
   photoFigure(ph, cls = '') {
     return h('figure', { class: `photo ${cls}` },
-      h('img', { src: photoPath(ph), alt: ph.alt, loading: 'lazy', decoding: 'async', onclick: () => this.openPhoto(ph) }),
-      h('figcaption', null, '📷 ', h('a', { href: ph.src, target: '_blank', rel: 'noopener' }, `${ph.author} · ${ph.license}`), ' · 위키미디어 공용'));
+      h('img', { src: ph.data || photoPath(ph), alt: ph.alt, loading: 'lazy', decoding: 'async', onclick: () => this.openPhoto(ph) }),
+      ph.src
+        ? h('figcaption', null, '📷 ', h('a', { href: ph.src, target: '_blank', rel: 'noopener' }, `${ph.author} · ${ph.license}`), ' · 위키미디어 공용')
+        : h('figcaption', null, `📷 ${ph.author}`));
   }
 
   openPhoto(ph) {
@@ -642,8 +645,10 @@ export class App {
       full: true,
       className: 'photo-sheet',
       body: h('div', { class: 'photo-big' },
-        h('img', { src: photoPath(ph), alt: ph.alt }),
-        h('p', { class: 'muted small' }, '사진: ', h('a', { href: ph.src, target: '_blank', rel: 'noopener' }, ph.author), ` · ${ph.license} · 위키미디어 공용 (찍은 때와 지금 모습이 다를 수 있어요)`)),
+        h('img', { src: ph.data || photoPath(ph), alt: ph.alt }),
+        ph.src
+          ? h('p', { class: 'muted small' }, '사진: ', h('a', { href: ph.src, target: '_blank', rel: 'noopener' }, ph.author), ` · ${ph.license} · 위키미디어 공용 (찍은 때와 지금 모습이 다를 수 있어요)`)
+          : h('p', { class: 'muted small' }, `사진: ${ph.author}`)),
     });
   }
 

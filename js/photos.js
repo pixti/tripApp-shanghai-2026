@@ -28,6 +28,7 @@ export const PHOTOS = [
   { id: 'szstation', match: /^苏州站$/, alt: "쑤저우역 대합실", author: "Chainwit.", license: "CC BY 4.0", src: "https://commons.wikimedia.org/wiki/File:China-Suzhou_(2024)_Suzhou_Railway_Station_%E8%8B%8F%E5%B7%9E%E7%AB%99_-_img_05.jpg" },
   { id: 'pvg', match: /浦东国际机场/, alt: "푸동공항 T1", author: "そらみみ", license: "CC BY-SA 4.0", src: "https://commons.wikimedia.org/wiki/File:Terminal_1_of_Shanghai_Pudong_International_Airport_from_Pudong_International_Airport_Station_(Shanghai_Maglev).jpg" },
   { id: 'hzkpg', match: /杭州旧址/, alt: "항저우 임시정부 구지", author: "Yumeto", license: "CC BY-SA 4.0", src: "https://commons.wikimedia.org/wiki/File:20230629_Dahan_Minguo_Linshi_Zhengfu_Hangzhou_Jiuzhi_Jinianguan_(103355).jpg" },
+  { id: 'hefang', match: /河坊街/, alt: "허팡제", author: "钉钉", license: "CC BY-SA 4.0", src: "https://commons.wikimedia.org/wiki/File:Hefang_Street,_Hangzhou.jpg" },
 ];
 
 const NO_PHOTO_CAT = new Set(['food', 'hotel', 'transit']);
