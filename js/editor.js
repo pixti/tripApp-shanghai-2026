@@ -86,7 +86,7 @@ export function editStop(app, { day, track, stop, after = null }) {
       picker.center(p.lat, p.lng);
     }
     if (p.name && !f.zh.value) f.zh.value = p.name;
-    toast('좌표를 넣었어요');
+    toast('좌표 입력 완료');
   });
   const syncFromInputs = () => {
     const lat = parseFloat(f.lat.value);
@@ -125,7 +125,7 @@ export function editStop(app, { day, track, stop, after = null }) {
   );
 
   function useMyLocation() {
-    if (!navigator.geolocation) return toast('위치를 쓸 수 없어요');
+    if (!navigator.geolocation) return toast('위치를 쓸 수 없다');
     toast('위치 찾는 중…');
     navigator.geolocation.getCurrentPosition(p => {
       const [lat, lng] = MAP.fromGps(p.coords.latitude, p.coords.longitude);
@@ -134,8 +134,8 @@ export function editStop(app, { day, track, stop, after = null }) {
         picker.set(lat, lng, false);
         picker.center(lat, lng);
       }
-      toast('지금 위치를 넣었어요');
-    }, () => toast('위치를 찾지 못했어요'), { enableHighAccuracy: true, timeout: 15000 });
+      toast('현재 위치 입력 완료');
+    }, () => toast('위치를 찾지 못했다'), { enableHighAccuracy: true, timeout: 15000 });
   }
 
   function collect() {
@@ -164,17 +164,17 @@ export function editStop(app, { day, track, stop, after = null }) {
   function save() {
     const v = collect();
     if (!v.name) {
-      toast('이름을 넣어 주세요');
+      toast('이름을 입력할 것');
       f.name.focus();
       return;
     }
     if ((v.lat === null) !== (v.lng === null)) {
-      toast('위도와 경도를 둘 다 넣거나 둘 다 비워 주세요');
+      toast('위도와 경도를 둘 다 넣거나 둘 다 비울 것');
       return;
     }
     if (isNew) {
       app.store.commit({ type: 'stop.add', day: day.id, track: track.id, after, stop: { id: uid('s'), ...v } });
-      toast('추가했어요');
+      toast('추가 완료');
     } else {
       const patch = {};
       for (const [k, val] of Object.entries(v)) if (!sameJSON(val, stop[k])) patch[k] = val;
@@ -183,7 +183,7 @@ export function editStop(app, { day, track, stop, after = null }) {
         return;
       }
       app.store.commit({ type: 'stop.update', day: day.id, track: track.id, stopId: stop.id, patch });
-      toast('저장했어요');
+      toast('저장 완료');
     }
     sheet.close();
   }
@@ -228,9 +228,9 @@ export function moveStop(app, day, track, stop, dir) {
 }
 
 export async function deleteStop(app, day, track, stop) {
-  if (!(await confirmSheet(`'${stop.name}'을(를) 일정에서 지울까요?\n(잠깐 빼는 거면 "건너뛰기"를 쓰세요)`, { ok: '지우기', danger: true }))) return;
+  if (!(await confirmSheet(`'${stop.name}'을(를) 일정에서 지울까요?\n(잠깐 빼는 거면 "건너뛰기"를 쓸 것)`, { ok: '지우기', danger: true }))) return;
   app.store.commit({ type: 'stop.delete', day: day.id, track: track.id, stopId: stop.id, name: stop.name });
-  toast('지웠어요');
+  toast('삭제 완료');
 }
 
 // ── 날짜 제목/메모 ───────────────────────────────────────
@@ -263,7 +263,7 @@ export function editDay(app, day, track) {
     }
     if (ops.length) {
       app.store.commit(ops);
-      toast('저장했어요');
+      toast('저장 완료');
     }
     sheet.close();
   };
@@ -292,14 +292,14 @@ export function editInfo(app, sec) {
   );
   const save = () => {
     const v = { icon: f.icon.value.trim() || '📌', title: f.title.value.trim(), body: f.body.value.replace(/\s+$/, '') };
-    if (!v.title) return toast('제목을 넣어 주세요');
+    if (!v.title) return toast('제목을 입력할 것');
     if (isNew) app.store.commit({ type: 'info.add', section: { id: uid('i'), ...v } });
     else {
       const patch = {};
       for (const k of Object.keys(v)) if (v[k] !== sec[k]) patch[k] = v[k];
       if (Object.keys(patch).length) app.store.commit({ type: 'info.update', id: sec.id, patch });
     }
-    toast('저장했어요');
+    toast('저장 완료');
     sheet.close();
   };
   const sheet = openSheet({
@@ -334,14 +334,14 @@ export function editCheck(app, item) {
   );
   const save = () => {
     const v = { title: f.title.value.trim(), date: f.date.value, opens: f.opens.value, who: f.who.value, onsite: f.onsite.checked, note: f.note.value.trim(), link: f.link.value.trim() };
-    if (!v.title) return toast('할 일을 넣어 주세요');
+    if (!v.title) return toast('할 일을 입력할 것');
     if (isNew) app.store.commit({ type: 'check.add', item: { id: uid('c'), done: false, ...v } });
     else {
       const patch = {};
       for (const k of Object.keys(v)) if (!sameJSON(v[k], c[k])) patch[k] = v[k];
       if (Object.keys(patch).length) app.store.commit({ type: 'check.update', id: c.id, patch });
     }
-    toast('저장했어요');
+    toast('저장 완료');
     sheet.close();
   };
   const actions = [h('button', { class: 'btn', type: 'button', onclick: () => sheet.close() }, '취소'), h('button', { class: 'btn primary', type: 'button', onclick: save }, '저장')];

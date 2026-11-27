@@ -304,7 +304,7 @@ export class Store extends EventTarget {
         if (this.pending.length) this.flushSoon(150);
         return;
       }
-      throw new Error('저장 충돌이 계속돼요. 잠시 후 다시 시도할게요.');
+      throw new Error('저장 충돌이 계속된다. 잠시 후 다시 시도한다.');
     } catch (e) {
       this.fail(e);
       if (e && e.status !== 401 && e.status !== 403) this.flushSoon(15000);

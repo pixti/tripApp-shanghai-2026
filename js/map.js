@@ -19,7 +19,10 @@ function tileLayer(lang) {
 
 export class TripMap {
   constructor(el, { lang = 'zh', onMarker } = {}) {
-    this.map = L.map(el, { zoomControl: false, attributionControl: true }).setView(SHANGHAI, 12);
+    // 휴대폰: 한 손가락은 화면 스크롤, 두 손가락으로 지도 이동·확대 (크게 보기에서는 한 손가락도 됨)
+    this.touch = !!(L.Browser.mobile || L.Browser.touch);
+    this.map = L.map(el, { zoomControl: false, attributionControl: true, dragging: !this.touch }).setView(SHANGHAI, 12);
+    if (this.touch) this.addTouchHint(el);
     L.control.zoom({ position: 'topright' }).addTo(this.map);
     this.map.attributionControl.setPrefix(false);
     this.lang = lang === 'en' ? 'en' : 'zh';
@@ -30,6 +33,28 @@ export class TripMap {
     this.bounds = null;
     this.watchId = null;
     this.myPos = null;
+  }
+
+  // 한 손가락으로 지도를 밀면 안내를 잠깐 보여줌
+  addTouchHint(el) {
+    const hint = document.createElement('div');
+    hint.className = 'map-hint';
+    hint.textContent = '지도 이동: 두 손가락 · 한 손가락은 [⤢ 크게]에서';
+    el.appendChild(hint);
+    let timer = null;
+    el.addEventListener('touchmove', e => {
+      if (this.full || e.touches.length !== 1) return;
+      hint.classList.add('show');
+      clearTimeout(timer);
+      timer = setTimeout(() => hint.classList.remove('show'), 1400);
+    }, { passive: true });
+  }
+
+  // 크게 보기(전체 화면)일 때만 한 손가락 드래그 허용
+  setFull(on) {
+    this.full = on;
+    if (!this.touch) return;
+    if (on) this.map.dragging.enable(); else this.map.dragging.disable();
   }
 
   // 지도 제공자가 바뀌었을 때 타일 다시 깔기

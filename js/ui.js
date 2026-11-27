@@ -79,7 +79,7 @@ export class App {
     const mapEl = h('div', { class: 'map', id: 'map' });
     this.el.mapBox.append(mapEl, h('button', { class: 'fs-close', type: 'button', onclick: () => this.toggleFullscreen(false) }, '✕ 닫기'));
     this.el.mapCard.append(this.el.mapBox, this.el.mapTools,
-      h('p', { class: 'map-note' }, '핀 번호는 일정 순서예요. 점선은 순서만 이은 것이고 실제 경로가 아니에요 — 경로는 구간마다 있는 [경로]나 [길찾기]로 보세요.'));
+      h('p', { class: 'map-note' }, '핀 번호는 일정 순서이다. 점선은 순서만 이은 선이고 실제 경로가 아니다. 지도 이동은 두 손가락, 또는 [⤢ 크게].'));
     this.el.dayView.append(this.el.dayHead, this.el.tracks, this.el.mapCard, this.el.list);
     root.append(h('div', { class: 'sticky' }, this.el.header, this.el.tabs),
       this.el.scroller = h('div', { class: 'scroller' }, h('main', { class: 'main' }, this.el.loading, this.el.dayView, this.el.otherView)),
@@ -90,7 +90,7 @@ export class App {
     this.setupSwipe();
     this.store.addEventListener('status', () => this.renderHeader());
     this.store.addEventListener('rejected', e => {
-      toast(`상대방이 먼저 바꾼 부분과 겹쳐서 ${e.detail.length}건은 적용 못 했어요`, { ms: 5000 });
+      toast(`상대방이 먼저 바꾼 부분과 겹쳐서 ${e.detail.length}건은 적용 못 했다`, { ms: 5000 });
     });
     setInterval(() => this.renderHeader(), 60000);
   }
@@ -109,7 +109,8 @@ export class App {
       const t = e.changedTouches[0];
       const dx = t.clientX - sx, dy = t.clientY - sy;
       if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
-      const ids = [...(this.data.days || []).map(d => d.id), ...OTHER_TABS];
+      const dayIds = (this.data.days || []).map(d => d.id);
+      const ids = dayIds.includes(this.tab) ? dayIds : OTHER_TABS;
       const i = ids.indexOf(this.tab);
       const j = i + (dx < 0 ? 1 : -1);
       if (i >= 0 && j >= 0 && j < ids.length) this.setTab(ids[j]);
@@ -127,7 +128,7 @@ export class App {
       this.el.tabs.hidden = true;
       if (this.store.status === 'error' || this.store.status === 'offline' || this.store.status === 'auth') {
         clear(this.el.loading).append(
-          h('p', null, this.store.status === 'offline' ? '인터넷 연결이 필요해요 (처음 한 번)' : '일정을 불러오지 못했어요'),
+          h('p', null, this.store.status === 'offline' ? '인터넷 연결이 필요하다 (처음 한 번)' : '일정을 불러오지 못했다'),
           h('p', { class: 'muted' }, String((this.store.error && this.store.error.message) || '')),
           h('button', { class: 'btn primary', type: 'button', onclick: () => this.store.refresh({ force: true }) }, '다시 시도'));
       }
@@ -213,12 +214,12 @@ export class App {
           title: '편집 모드',
           onclick: () => {
             this.store.setPref('edit', !this.store.prefs.edit);
-            toast(this.store.prefs.edit ? '편집 모드 켬 — 카드마다 수정 버튼이 생겨요' : '편집 모드 끔');
+            toast(this.store.prefs.edit ? '편집 모드 켬 — 카드마다 수정 버튼이 생긴다' : '편집 모드 끔');
           },
         }, '✏️') : null,
         h('button', { class: 'icon-btn', type: 'button', title: '설정', onclick: () => this.openSettings() }, '⚙️')),
     );
-    if (this.editing) hd.append(h('div', { class: 'edit-banner' }, '✏️ 편집 모드 — 고친 내용은 바로 같이 쓰는 사람에게도 반영돼요'));
+    if (this.editing) hd.append(h('div', { class: 'edit-banner' }, '✏️ 편집 모드 — 고친 내용은 바로 같이 쓰는 사람에게도 반영된다'));
     const s = this.store;
     const alert = this.bookingAlert();
     if (alert) hd.append(alert);
@@ -255,51 +256,49 @@ export class App {
   onSyncClick() {
     const s = this.store;
     if (s.status === 'auth') {
-      toast('GitHub 토큰 권한/만료 문제예요. 설정 → 동기화 상태를 확인하세요', { ms: 5000 });
+      toast('GitHub 토큰 권한/만료 문제이다. 설정 → 동기화 상태를 확인할 것', { ms: 5000 });
       return;
     }
     if (navigator.onLine === false) {
-      toast('지금은 오프라인이에요 — 저장된 일정을 그대로 보여드려요');
+      toast('지금은 오프라인이다 — 저장된 일정을 그대로 보여준다');
       return;
     }
     toast('최신 일정 받는 중…');
     s.refresh({ force: true }).then(() => {
       if (s.pending.length) s.flush();
-      if (s.status === 'ok' || s.status === 'pending') toast('최신 일정으로 업데이트했어요');
-      else toast('연결이 안 돼서 저장된 일정을 계속 보여드려요', { ms: 3500 });
+      if (s.status === 'ok' || s.status === 'pending') toast('최신 일정으로 업데이트했다');
+      else toast('연결이 안 돼서 저장된 일정을 계속 보여준다', { ms: 3500 });
     });
   }
 
   // ── 탭 ────────────────────────────────────────────────
   renderTabs() {
+    // 1줄: 큰 메뉴 5개 (일정·예약·할 일·가이드·정보) / 2줄: 일정일 때만 날짜
     const nav = this.el.tabs;
     clear(nav);
     const today = chinaToday();
-    (this.data.days || []).forEach((d, i) => {
-      const multi = (d.tracks || []).length > 1;
-      const btn = h('button', {
-        class: `tab ${this.tab === d.id ? 'active' : ''} ${d.date === today ? 'today' : ''}`,
-        type: 'button',
-        onclick: () => this.setTab(d.id),
-      },
-      h('b', null, `Day ${i + 1}`, multi ? h('em', { class: 'tag' }, '개별') : null),
-      h('small', null, `${mdLabel(d.date)} ${d.title || ''}`));
-      nav.append(btn);
-    });
+    const days = this.data.days || [];
+    const onDay = days.some(d => d.id === this.tab);
+    if (onDay) this.lastDay = this.tab;
     const me = this.store.me;
     const todo = (this.data.checklist || []).filter(c => !isBook(c) && !c.done && !c.onsite && (!me || !c.who || c.who === '둘 다' || c.who === me)).length;
     const bookN = (this.data.checklist || []).filter(bookTodo).length;
-    nav.append(
-      h('button', { class: `tab ${this.tab === 'book' ? 'active' : ''}`, type: 'button', onclick: () => this.setTab('book') },
-        h('b', null, '🎟️ 예약·발권', bookN ? h('em', { class: 'count' }, String(bookN)) : null), h('small', null, '언제 무엇을 예약')),
-      h('button', { class: `tab ${this.tab === 'check' ? 'active' : ''}`, type: 'button', onclick: () => this.setTab('check') },
-        h('b', null, '✅ 할 일', todo ? h('em', { class: 'count' }, String(todo)) : null), h('small', null, '출발 전 준비')),
-      h('button', { class: `tab ${this.tab === 'guide' ? 'active' : ''}`, type: 'button', onclick: () => this.setTab('guide') },
-        h('b', null, '🧭 가이드'), h('small', null, '기차·지하철·중국 팁')),
-      h('button', { class: `tab ${this.tab === 'info' ? 'active' : ''}`, type: 'button', onclick: () => this.setTab('info') },
-        h('b', null, 'ℹ️ 정보'), h('small', null, '항공·숙소·결제')),
-    );
-    const act = nav.querySelector('.tab.active');
+    const main = (id, icon, label, n, go) => h('button', { class: `tab main-tab ${(id === 'days' ? onDay : this.tab === id) ? 'active' : ''}`, type: 'button', onclick: go || (() => this.setTab(id)) },
+      h('span', { class: 'mt-icon' }, icon, n ? h('em', { class: 'count' }, String(n)) : null),
+      h('span', { class: 'mt-label' }, label));
+    const row1 = h('div', { class: 'main-tabs' },
+      main('days', '📅', '일정', 0, () => this.setTab(this.lastDay && days.some(d => d.id === this.lastDay) ? this.lastDay : this.defaultTab())),
+      main('book', '🎟️', '예약·발권', bookN),
+      main('check', '✅', '할 일', todo),
+      main('guide', '🧭', '가이드', 0),
+      main('info', 'ℹ️', '정보', 0));
+    const row2 = h('div', { class: 'day-tabs', hidden: !onDay }, days.map((d, i) => h('button', {
+      class: `tab day-tab ${this.tab === d.id ? 'active' : ''} ${d.date === today ? 'today' : ''}`,
+      type: 'button',
+      onclick: () => this.setTab(d.id),
+    }, h('b', null, `Day ${i + 1}`, (d.tracks || []).length > 1 ? h('em', { class: 'tag' }, '개별') : null), h('small', null, `${mdLabel(d.date).split(' ')[0]} ${d.title || ''}`))));
+    nav.append(row1, row2);
+    const act = row2.querySelector('.tab.active');
     if (act) requestAnimationFrame(() => act.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }));
   }
 
@@ -329,7 +328,7 @@ export class App {
     // 머리 카드
     const head = this.el.dayHead;
     clear(head);
-    const route = stops.length ? `${shortName(stops[0])} → … → ${shortName(stops[stops.length - 1])} · ${stops.length}곳` : '아직 장소가 없어요';
+    const route = stops.length ? `${shortName(stops[0])} → … → ${shortName(stops[stops.length - 1])} · ${stops.length}곳` : '아직 장소가 없다';
     head.append(
       h('div', { class: 'dh-sub' }, `DAY ${idx + 1} · ${mdLabel(day.date)}`, isToday ? h('span', { class: 'today-badge' }, '오늘') : null),
       h('h2', { class: 'dh-title' }, day.title || ''),
@@ -370,7 +369,7 @@ export class App {
     clear(list);
     this.cardEls.clear();
     if (!stops.length) {
-      list.append(h('div', { class: 'card empty' }, '장소가 없어요.', this.editing ? ' 아래 버튼으로 추가하세요.' : ''));
+      list.append(h('div', { class: 'card empty' }, '장소가 없다.', this.editing ? ' 아래 버튼으로 추가할 것.' : ''));
     }
     stops.forEach((s, i) => {
       const prev = i > 0 ? stops.slice(0, i).reverse().find(p => A.hasPos(p) && !p.skip) : null;
@@ -414,7 +413,7 @@ export class App {
 
   async copy(text, hint = '') {
     const ok = await copyText(text);
-    toast(ok ? `복사했어요${hint ? ` · ${hint}` : ''}` : '복사하지 못했어요');
+    toast(ok ? `복사했다${hint ? ` · ${hint}` : ''}` : '복사하지 못했다');
   }
 
   copyZh(text) {
@@ -625,7 +624,7 @@ export class App {
     if (!this.map) return;
     this.el.mapCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setTimeout(() => {
-      if (!this.map.focus(id)) toast('이 장소는 지도 좌표가 없어요');
+      if (!this.map.focus(id)) toast('이 장소는 지도 좌표가 없다');
     }, 350);
   }
 
@@ -656,7 +655,7 @@ export class App {
       body: h('div', { class: 'photo-big' },
         h('img', { src: ph.data || photoPath(ph), alt: ph.alt }),
         ph.src
-          ? h('p', { class: 'muted small' }, '사진: ', h('a', { href: ph.src, target: '_blank', rel: 'noopener' }, ph.author), ` · ${ph.license} · 위키미디어 공용 (찍은 때와 지금 모습이 다를 수 있어요)`)
+          ? h('p', { class: 'muted small' }, '사진: ', h('a', { href: ph.src, target: '_blank', rel: 'noopener' }, ph.author), ` · ${ph.license} · 위키미디어 공용 (찍은 때와 지금 모습이 다를 수 있다)`)
           : h('p', { class: 'muted small' }, '사진 ', ph.page ? h('a', { href: ph.page, target: '_blank', rel: 'noopener' }, `출처: ${ph.author}`) : ph.author, ' (개인 여행용으로만 보관)')),
     });
   }
@@ -677,24 +676,24 @@ export class App {
         '**설정 → 개인정보 보호 및 보안 → 위치 서비스** 켜기',
         '같은 화면 아래 **Safari 웹 사이트** → **앱을 사용하는 동안** + **정확한 위치** 켜기',
         '사파리에서 주소창 왼쪽 **가가(aA)** → **웹 사이트 설정** → **위치** → **허용**',
-        '홈 화면에 추가한 앱은 처음 누를 때 물어봐요 → **허용**',
+        '홈 화면에 추가한 앱은 처음 누를 때 물어본다 → **허용**',
         '바꾼 뒤 앱으로 돌아와 **◎ 내 위치**를 다시 누르기',
       ]],
       ['pc', '컴퓨터', [
         '크롬 **⋮ → 설정 → 개인 정보 보호 및 보안 → 사이트 설정 → 위치** → 이 사이트를 **허용**',
         '윈도우: **설정 → 개인 정보 및 보안 → 위치** → 위치 서비스·앱의 위치 액세스 켜기',
         '맥: **시스템 설정 → 개인정보 보호 및 보안 → 위치 서비스** → Chrome 켜기',
-        'PC는 GPS가 없어서 위치가 수백 m 틀릴 수 있어요',
+        'PC는 GPS가 없어서 위치가 수백 m 틀릴 수 있다',
       ]],
     ];
     let cur = /iPhone|iPad/.test(UA) ? 'iphone' : /Android/.test(UA) ? 'android' : 'pc';
     const body = h('div', { class: 'loc-help' });
     const draw = () => {
       clear(body).append(
-        h('p', null, inline('지도에 내 위치를 보려면 이 앱에 **위치 권한**이 필요해요. 쓰는 기기를 고르세요.')),
+        h('p', null, inline('지도에 내 위치를 보려면 이 앱에 **위치 권한**이 필요하다. 쓰는 기기를 고를 것.')),
         h('div', { class: 'seg' }, tabs.map(([id, label]) => h('button', { class: `seg-btn ${cur === id ? 'on' : ''}`, type: 'button', onclick: () => { cur = id; draw(); } }, label))),
         this.stepList(tabs.find(t => t[0] === cur)[2]),
-        h('p', { class: 'muted small' }, '위치 정보는 내 폰 지도에만 쓰이고 어디에도 저장·전송되지 않아요.'));
+        h('p', { class: 'muted small' }, '위치 정보는 내 폰 지도에만 쓰이고 어디에도 저장·전송되지 않는다.'));
     };
     draw();
     openSheet({ title: '📍 위치 권한 켜는 법', body, full: true });
@@ -736,7 +735,7 @@ export class App {
     }
     this.map.startLocate(pos => { this.myPos = pos; this.updateNextDist(); }, msg => {
       if (/권한/.test(msg)) this.openLocationHelp();
-      else toast(`${msg} — 실내라면 창가로, 휴대폰 위치(GPS)가 켜져 있는지 확인하세요`, { ms: 4500 });
+      else toast(`${msg} — 실내라면 창가로, 휴대폰 위치(GPS)가 켜져 있는지 확인할 것`, { ms: 4500 });
       this.render();
     });
     this.render();
@@ -747,10 +746,12 @@ export class App {
     if (on && !card.classList.contains('fs')) {
       card.classList.add('fs');
       document.body.classList.add('no-scroll');
+      this.map.setFull(true);
       this.fsLayer = openLayer(h('div'), {
         onClose: () => {
           card.classList.remove('fs');
           document.body.classList.remove('no-scroll');
+          if (this.map) this.map.setFull(false);
           this.fsLayer = null;
           setTimeout(() => this.map && this.map.invalidate(), 60);
         },
@@ -802,8 +803,8 @@ export class App {
     clear(v);
     v.append(h('div', { class: 'card guide-intro' },
       h('h3', null, '🧭 중국 처음이라면'),
-      h('p', null, '기차·지하철 타는 순서, 역 안에서 몇 층으로 가는지, 갑자기 나오는 짐검사까지 정리했어요. 중국어 글자는 누르면 복사, ⤢ 누르면 크게 보여줘요.'),
-      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 역 구조·규정은 바뀔 수 있으니 현장 표지판과 직원 안내가 우선이에요.`),
+      h('p', null, '기차·지하철 타는 순서, 역 안에서 몇 층으로 가는지, 갑자기 나오는 짐검사까지 정리했다. 중국어 글자는 누르면 복사, ⤢ 누르면 크게 보여준다.'),
+      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 역 구조·규정은 바뀔 수 있으니 현장 표지판과 직원 안내가 우선이다.`),
       h('button', { class: 'btn sm', type: 'button', onclick: () => this.openLocationHelp() }, '📍 내 위치가 안 나올 때 (위치 권한 켜는 법)')));
 
     // 기차 타는 법
@@ -824,7 +825,7 @@ export class App {
     // 정원 내부 동선
     v.append(h('div', { class: 'card' },
       h('h3', null, '🏯 정원 내부 동선 지도 — 오래 걸리는 곳'),
-      h('p', { class: 'muted small' }, '2~3시간 걸리는 큰 정원은 안에서 길을 잃기 쉬워요. 추천 순서대로 그린 개략도와 꼭 볼 곳이에요.'),
+      h('p', { class: 'muted small' }, '2~3시간 걸리는 큰 정원은 안에서 길을 잃기 쉽다. 추천 순서대로 그린 개략도와 꼭 볼 곳이다.'),
       h('div', { class: 'st-grid' }, SITES.map(site => h('button', { class: 'st-card', type: 'button', onclick: () => this.openSite(site) },
         h('b', null, `🗺️ ${site.name}`),
         h('span', { lang: 'zh-CN' }, `${site.zh} · ${site.city}`),
@@ -845,7 +846,7 @@ export class App {
     const q = h('textarea', { class: 'inp', rows: 3, placeholder: '궁금한 것 (예: 기차 타려면 몇 층으로 가요? 짐검사에서 뭘 꺼내야 해요?)' });
     v.append(h('div', { class: 'card ai-card' },
       h('h3', null, '🤖 AI에게 묻기'),
-      h('p', { class: 'muted small' }, '여기 없는 상황은 AI에게 물어보세요. 질문을 "단계별·몇 층·표지판 중국어·확실하지 않으면 확인 필요 표시" 형식으로 만들어서 넘겨줘요. 장소 카드 ⋯ 메뉴에서는 그 구간 정보가 자동으로 들어가요.'),
+      h('p', { class: 'muted small' }, '여기 없는 상황은 AI에게 물어볼 것. 질문을 "단계별·몇 층·표지판 중국어·확실하지 않으면 확인 필요 표시" 형식으로 만들어서 넘겨준다. 장소 카드 ⋯ 메뉴에서는 그 구간 정보가 자동으로 들어간다.'),
       h('div', { class: 'editor' }, from, to, q),
       h('div', { class: 'row ai-go' }, h('button', {
         class: 'btn primary', type: 'button',
@@ -883,7 +884,7 @@ export class App {
       focus === 'arrive' ? [part('arrive', '🚪 도착해서 나가기'), part('depart', '🚶 타러 가기 (출발)')]
         : [part('depart', '🚶 타러 가기 (출발)'), part('arrive', '🚪 도착해서 나가기')],
       st.tips && st.tips.length ? h('div', { class: 'note-box' }, h('ul', { class: 'rt-ul' }, st.tips.map(t => h('li', null, inline(t, this.richCtx()))))) : null,
-      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 현장 표지판이 우선이에요. 고덕 지하철 경로의 「站内图文指引」(역 안 사진 길안내)도 같이 보세요.`));
+      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 현장 표지판이 우선이다. 고덕 지하철 경로의 「站内图文指引」(역 안 사진 길안내)도 같이 볼 것.`));
     openSheet({
       title: `${st.icon} ${st.name} 안내`,
       body,
@@ -1015,7 +1016,7 @@ export class App {
       sph ? this.photoFigure(sph, 'site-photo') : null,
       list,
       h('div', { class: 'note-box' }, h('ul', { class: 'rt-ul' }, site.tips.map(t => h('li', null, inline(t, ctx))))),
-      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 직접 그린 개략도라 실제 축척·모양과 달라요. 번호나 이름을 누르면 지도와 목록이 서로 표시돼요. 공사·통제로 길이 막히면 현장 안내판(导览图)을 따라가세요.`));
+      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 직접 그린 개략도라 실제 축척·모양과 다르다. 번호나 이름을 누르면 지도와 목록이 서로 표시된다. 공사·통제로 길이 막히면 현장 안내판(导览图)을 따라갈 것.`));
     // 지도는 위에 항상 고정, 아래 목록만 스크롤
     const body = h('div', { class: 'site-sheet' },
       h('div', { class: 'site-stick' }, mapBox,
@@ -1060,9 +1061,9 @@ export class App {
       full: true,
       className: 'ai-sheet',
       body: h('div', { class: 'editor' },
-        h('p', { class: 'muted small' }, '아래 질문을 고쳐도 돼요. 버튼을 누르면 질문이 복사되고 AI가 열려요 (질문이 안 들어가 있으면 붙여넣기). AI 답은 틀릴 수 있으니 층·출구 번호는 현장 표지판으로 꼭 확인하세요.'),
+        h('p', { class: 'muted small' }, '아래 질문을 고쳐도 된다. 버튼을 누르면 질문이 복사되고 AI가 열린다 (질문이 안 들어가 있으면 붙여넣기). AI 답은 틀릴 수 있으니 층·출구 번호는 현장 표지판으로 꼭 확인할 것.'),
         ta,
-        h('p', { class: 'muted small' }, '중국 현지 와이파이/유심에서는 ChatGPT·Claude가 막혀요 (한국 로밍은 OK). 그럴 땐 [질문 복사] 후 豆包·DeepSeek 같은 중국 AI에 붙여넣기.')),
+        h('p', { class: 'muted small' }, '중국 현지 와이파이/유심에서는 ChatGPT·Claude가 막힌다 (한국 로밍은 OK). 그럴 땐 [질문 복사] 후 豆包·DeepSeek 같은 중국 AI에 붙여넣기.')),
       actions: [
         ...AI_TARGETS.map(t => h('button', { class: 'btn primary', type: 'button', onclick: () => open(t) }, t.label)),
         h('button', { class: 'btn', type: 'button', onclick: () => this.copy(ta.value.trim(), 'AI 앱에 붙여넣기') }, '질문 복사'),
@@ -1076,7 +1077,7 @@ export class App {
     clear(v);
     const rate = this.store.rate;
     const live = this.store.prefs.rateLive;
-    const hint = '금액을 넣으면 원으로 바꿔줘요';
+    const hint = '금액을 넣으면 원으로 바꿔준다';
     const out = h('div', { class: 'conv-out empty' }, hint);
     const gLink = h('a', { class: 'btn sm', target: '_blank', rel: 'noopener', href: 'https://www.google.com/search?q=1+CNY+to+KRW' }, '🔎 구글 환율');
     const nLink = h('a', { class: 'btn sm', target: '_blank', rel: 'noopener', href: 'https://m.search.naver.com/search.naver?query=' + encodeURIComponent('위안 환율') }, '🔎 네이버 환율');
@@ -1096,7 +1097,7 @@ export class App {
       },
     });
     // 원 → 위안
-    const hintW = '원화를 넣으면 위안으로 바꿔줘요';
+    const hintW = '원화를 넣으면 위안으로 바꿔준다';
     const outW = h('div', { class: 'conv-out empty' }, hintW);
     const inputW = h('input', {
       class: 'conv-in',
@@ -1156,7 +1157,7 @@ export class App {
   async fetchRate(force) {
     const live = this.store.prefs.rateLive;
     if (!force && live && Date.now() - live.at < 12 * 3600000) return;
-    if (navigator.onLine === false) { if (force) toast('오프라인이에요 — 저장된 환율을 써요'); return; }
+    if (navigator.onLine === false) { if (force) toast('오프라인이다 — 저장된 환율을 쓴다'); return; }
     try {
       const r = await fetch('https://open.er-api.com/v6/latest/CNY', { cache: 'no-store' });
       const j = await r.json();
@@ -1171,7 +1172,7 @@ export class App {
       }
       if (force) toast(`오늘 환율: 1위안 = ${Math.round(krw * 10) / 10}원`);
     } catch {
-      if (force) toast('환율을 못 받았어요 — 구글/네이버 버튼으로 확인하세요');
+      if (force) toast('환율을 못 받았다 — 구글/네이버 버튼으로 확인할 것');
     }
   }
 
@@ -1229,13 +1230,13 @@ export class App {
         v.append(h('div', { class: 'card bk-list' }, list.map(c => this.bookRow(c, today))));
       }
     };
-    if (!this.store.canEdit) v.append(h('div', { class: 'card note-box' }, '체크 표시는 편집 권한(토큰)이 있어야 같이 저장돼요.'));
+    if (!this.store.canEdit) v.append(h('div', { class: 'card note-box' }, '체크 표시는 편집 권한(토큰)이 있어야 같이 저장된다.'));
     sec('🔥 지금 예약하기', '이미 열렸거나 열리는 날이 정해지지 않은 것', g.now);
-    sec('⏳ 오픈 예정', '이 날짜에 예약·판매가 열려요', g.soon, { byOpen: true });
-    sec('🎫 현장에서 사요', '미리 예약 없음', g.site);
+    sec('⏳ 오픈 예정', '이 날짜에 예약·판매가 열린다', g.soon, { byOpen: true });
+    sec('🎫 현장에서 산다', '미리 예약 없음', g.site);
     sec('🤔 필요할 때만', '일정상 안 해도 되는 것', g.opt);
     sec('✅ 완료', '', g.done);
-    if (!items.length) v.append(h('div', { class: 'card empty' }, '예약 항목이 없어요'));
+    if (!items.length) v.append(h('div', { class: 'card empty' }, '예약 항목이 없다'));
     v.append(h('div', { class: 'list-end' }));
   }
 
@@ -1301,12 +1302,12 @@ export class App {
       v.append(h('h3', { class: 'group-title' }, title, hint ? h('small', null, ` ${hint}`) : null));
       v.append(h('div', { class: 'card check-list' }, list.map(c => this.checkRow(c, today))));
     };
-    if (!this.store.canEdit) v.append(h('div', { class: 'card note-box' }, '체크 표시는 편집 권한(토큰)이 있어야 같이 저장돼요.'));
+    if (!this.store.canEdit) v.append(h('div', { class: 'card note-box' }, '체크 표시는 편집 권한(토큰)이 있어야 같이 저장된다.'));
     sec('🔥 지금 할 것', groups.now, '예약이 열렸거나 날짜가 정해지지 않은 것');
     sec('⏳ 예약 오픈 예정', groups.soon);
     sec('🎟️ 현장 구매·무료', groups.onsite);
     sec('✅ 완료', groups.done);
-    if (!items.length) v.append(h('div', { class: 'card empty' }, '항목이 없어요'));
+    if (!items.length) v.append(h('div', { class: 'card empty' }, '항목이 없다'));
     if (this.editing) v.append(h('button', { class: 'btn add-btn', type: 'button', onclick: () => E.editCheck(this, null) }, '➕ 항목 추가'));
     v.append(h('div', { class: 'list-end' }));
   }
@@ -1367,7 +1368,7 @@ export class App {
     }).catch(() => { storeLine.textContent = ''; });
     countCachedTiles().then(n => { tileInfo.textContent = `지금 저장된 지도 조각: ${n}장`; }).catch(() => {});
     const syncLine = s.status === 'auth'
-      ? 'GitHub 토큰이 만료됐거나 권한이 없어요. PC에서 토큰을 다시 설정해야 해요.'
+      ? 'GitHub 토큰이 만료됐거나 권한이 없다. PC에서 토큰을 다시 설정해야 한다.'
       : `${(SYNC_TEXT[s.status] || SYNC_TEXT.idle)[1]} · 마지막 동기화 ${s.lastSync ? timeAgo(s.lastSync) : '없음'}${s.pending.length ? ` · 저장 대기 ${s.pending.length}건` : ''}`;
     const meta = this.data && this.data.meta;
     const body = h('div', { class: 'settings' },
@@ -1375,11 +1376,11 @@ export class App {
       h('div', { class: 'seg' }, people.map(p => h('button', {
         class: `seg-btn ${s.me === p ? 'on' : ''}`, type: 'button', onclick: () => { s.setMe(p); rebuild(); },
       }, p))),
-      h('p', { class: 'muted' }, '수정 기록에 이름이 남고, 개별 일정 날에는 내 일정이 먼저 보여요.'),
+      h('p', { class: 'muted' }, '수정 기록에 이름이 남고, 개별 일정 날에는 내 일정이 먼저 보인다.'),
 
       MAP.id === 'amap' ? h('label', { class: 'set-label' }, '고덕 길찾기 여는 방식') : null,
       MAP.id === 'amap' ? seg('linkMode', [['app', '고덕 앱 바로 열기'], ['web', '웹페이지로 열기']]) : null,
-      MAP.id === 'amap' ? h('p', { class: 'muted' }, '안드로이드 폰에서는 고덕 앱이 바로 열려요. 아이폰·PC는 웹 고덕지도로 열리고, 앱이 깔려 있으면 거기서 앱으로 넘어가요. 안 열리면 "웹페이지로 열기"로 바꿔 보세요.') : null,
+      MAP.id === 'amap' ? h('p', { class: 'muted' }, '안드로이드 폰에서는 고덕 앱이 바로 열린다. 아이폰·PC는 웹 고덕지도로 열리고, 앱이 깔려 있으면 거기서 앱으로 넘어간다. 안 열리면 "웹페이지로 열기"로 바꿔 볼 것.') : null,
 
       h('label', { class: 'set-label' }, '내 위치'),
       h('button', { class: 'btn sm', type: 'button', onclick: () => { sheet.close(); setTimeout(() => this.openLocationHelp(), 120); } }, '📍 위치 권한 켜는 법'),
@@ -1392,7 +1393,7 @@ export class App {
 
       h('label', { class: 'set-label' }, '일정 업데이트 받기'),
       seg('sync', [['auto', '자동 (30초마다)'], ['manual', '내가 누를 때만']]),
-      h('p', { class: 'muted' }, '"내가 누를 때만"이면 위쪽 [업데이트 받기]를 눌러야 새 일정을 받아요. 데이터를 아끼거나 화면이 갑자기 바뀌는 게 싫을 때. 내가 고친 내용은 인터넷이 될 때 자동으로 올라가요.'),
+      h('p', { class: 'muted' }, '"내가 누를 때만"이면 위쪽 [업데이트 받기]를 눌러야 새 일정을 받는다. 데이터를 아끼거나 화면이 갑자기 바뀌는 게 싫을 때. 내가 고친 내용은 인터넷이 될 때 자동으로 올라간다.'),
 
       h('label', { class: 'set-label' }, '동기화'),
       h('p', null, syncLine),
@@ -1402,25 +1403,25 @@ export class App {
         h('button', { class: 'btn sm', type: 'button', onclick: () => { s.refresh({ force: true }); toast('새로 불러오는 중…'); } }, '↻ 지금 동기화'),
         s.pending.length ? h('button', {
           class: 'btn sm danger', type: 'button',
-          onclick: async () => { if (await confirmSheet(`아직 저장 못 한 수정 ${s.pending.length}건을 버릴까요?`, { ok: '버리기', danger: true })) { s.discardPending(); toast('버렸어요'); } },
+          onclick: async () => { if (await confirmSheet(`아직 저장 못 한 수정 ${s.pending.length}건을 버릴까요?`, { ok: '버리기', danger: true })) { s.discardPending(); toast('버렸다'); } },
         }, '대기 중 수정 버리기') : null),
-      !s.canEdit ? h('p', { class: 'muted' }, '이 앱에는 편집 토큰이 없어서 보기만 가능해요.') : null,
+      !s.canEdit ? h('p', { class: 'muted' }, '이 앱에는 편집 토큰이 없어서 보기만 가능하다.') : null,
 
       h('label', { class: 'set-label' }, '이 기기에 저장된 일정'),
       storeLine,
       h('div', { class: 'row' },
-        h('button', { class: 'btn sm', type: 'button', onclick: () => { if (s.exportBackup()) toast('백업 파일을 내려받았어요 (다운로드 폴더)'); } }, '💾 일정 백업 파일 받기')),
-      h('p', { class: 'muted small' }, '일정은 이 폰 안(브라우저 저장소)에 저장돼서 인터넷이 없어도 열려요. 백업 파일은 비밀번호 없이 열리는 파일이니 공유하지 마세요.'),
+        h('button', { class: 'btn sm', type: 'button', onclick: () => { if (s.exportBackup()) toast('백업 파일을 내려받았다 (다운로드 폴더)'); } }, '💾 일정 백업 파일 받기')),
+      h('p', { class: 'muted small' }, '일정은 이 폰 안(브라우저 저장소)에 저장돼서 인터넷이 없어도 열린다. 백업 파일은 비밀번호 없이 열리는 파일이니 공유하지 말 것.'),
 
       h('label', { class: 'set-label' }, '오프라인 지도'),
-      h('p', { class: 'muted' }, '와이파이에서 미리 저장해 두면 인터넷이 끊겨도 지도가 보여요 (장소 주변만, 수십 MB).'),
+      h('p', { class: 'muted' }, '와이파이에서 미리 저장해 두면 인터넷이 끊겨도 지도가 보인다 (장소 주변만, 수십 MB).'),
       h('div', { class: 'row' }, h('button', { class: 'btn sm', type: 'button', onclick: () => { sheet.close(); this.prefetchMap(); } }, '⬇ 지도 미리 저장'), tileInfo),
 
       h('label', { class: 'set-label' }, '잠금'),
       h('button', {
         class: 'btn sm danger', type: 'button',
         onclick: async () => {
-          if (await confirmSheet('이 기기에서 잠글까요? 다시 열 때 여행 비밀번호가 필요해요.', { ok: '잠그기', danger: true })) {
+          if (await confirmSheet('이 기기에서 잠글까요? 다시 열 때 여행 비밀번호가 필요하다.', { ok: '잠그기', danger: true })) {
             await s.lock();
             location.reload();
           }
@@ -1434,11 +1435,11 @@ export class App {
   async prefetchMap() {
     if (!this.data) return;
     if (!('caches' in window)) {
-      toast('이 브라우저는 지도 저장을 지원하지 않아요');
+      toast('이 브라우저는 지도 저장을 지원하지 않는다');
       return;
     }
     const list = tilesForTrip(this.data, this.store.prefs.lang);
-    const ok = await confirmSheet(`지도 조각 ${list.length}장 (약 ${Math.round(list.length * 22 / 1024)}MB)을 저장할게요. 와이파이에서 하세요.`, { ok: '저장 시작' });
+    const ok = await confirmSheet(`지도 조각 ${list.length}장 (약 ${Math.round(list.length * 22 / 1024)}MB)을 저장한다. 와이파이에서 할 것.`, { ok: '저장 시작' });
     if (!ok) return;
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     const ctrl = new AbortController();
@@ -1465,7 +1466,7 @@ export class App {
     const sheet = openSheet({
       title: '누구세요?',
       body: h('div', null,
-        h('p', null, '수정 기록에 이름이 남아요. 나중에 설정에서 바꿀 수 있어요.'),
+        h('p', null, '수정 기록에 이름이 남는다. 나중에 설정에서 바꿀 수 있다.'),
         h('div', { class: 'seg big' }, people.map(p => h('button', {
           class: 'seg-btn', type: 'button', onclick: () => { this.store.setMe(p); sheet.close(); },
         }, p)))),

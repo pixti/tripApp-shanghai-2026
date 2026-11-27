@@ -14,7 +14,7 @@ function registerSW() {
     return;
   }
   navigator.serviceWorker.register('sw.js').then(reg => {
-    const offer = w => toast('새 버전이 있어요', { action: { label: '업데이트', fn: () => w.postMessage('skipWaiting') }, ms: 0 });
+    const offer = w => toast('새 버전이 있다', { action: { label: '업데이트', fn: () => w.postMessage('skipWaiting') }, ms: 0 });
     if (reg.waiting && navigator.serviceWorker.controller) offer(reg.waiting);
     reg.addEventListener('updatefound', () => {
       const w = reg.installing;
@@ -64,7 +64,7 @@ function showLock() {
         lock.hidden = true;
         start();
       } catch (ex) {
-        err.textContent = ex.message === 'WRONG_PASS' ? '비밀번호가 달라요' : `열지 못했어요: ${ex.message}`;
+        err.textContent = ex.message === 'WRONG_PASS' ? '비밀번호가 다르다' : `열지 못했다: ${ex.message}`;
         btn.disabled = false;
         btn.textContent = '열기';
         input.select();
@@ -73,7 +73,7 @@ function showLock() {
   },
   h('div', { class: 'lock-icon' }, '🗺️'),
   h('h1', null, store.cfg.title || '여행 플래너'),
-  h('p', { class: 'muted' }, '같이 가는 사람끼리 정한 여행 비밀번호를 넣어 주세요.'),
+  h('p', { class: 'muted' }, '같이 가는 사람끼리 정한 여행 비밀번호를 입력할 것.'),
   input,
   h('label', { class: 'chk' }, remember, ' 이 기기에서 기억하기'),
   btn,
@@ -106,7 +106,7 @@ async function start() {
 async function boot() {
   registerSW();
   if (!window.L) {
-    document.body.append(h('p', { style: { padding: '20px' } }, '지도 라이브러리를 불러오지 못했어요. 새로고침 해 주세요.'));
+    document.body.append(h('p', { style: { padding: '20px' } }, '지도 라이브러리를 불러오지 못했다. 새로고침할 것.'));
   }
   if (await store.tryRestoreKey()) start();
   else showLock();
