@@ -24,7 +24,11 @@ const SYNC_TEXT = {
 };
 
 // 날짜 탭 뒤에 붙는 탭 (옆으로 밀기 순서)
-const OTHER_TABS = ['check', 'guide', 'info'];
+const OTHER_TABS = ['book', 'check', 'guide', 'info'];
+
+// 예약·발권 항목 판별 (체크리스트 중 kind: 'book')
+const isBook = c => c.kind === 'book';
+const bookTodo = c => isBook(c) && !c.done && !c.onsite && c.need !== '현장' && c.need !== '선택';
 
 function shortName(s) {
   return String((s && s.name) || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
@@ -152,6 +156,7 @@ export class App {
       this.el.nextBar.hidden = true;
       if (this.tab === 'info') this.renderInfo();
       else if (this.tab === 'guide') this.renderGuide();
+      else if (this.tab === 'book') this.renderBook();
       else this.renderCheck();
     }
   }
@@ -231,7 +236,7 @@ export class App {
 
   // 내 예약 중 오늘 열리는 것 / 이미 열렸는데 아직 안 한 것 → 위쪽 알림 띠
   bookingAlert() {
-    if (!this.data || this.tab === 'check') return null;
+    if (!this.data || this.tab === 'check' || this.tab === 'book') return null;
     const today = chinaToday();
     if (sessionStorage.getItem('tp.alertOff') === today) return null;
     const me = this.store.me;
@@ -243,7 +248,7 @@ export class App {
     const more = items.length > 1 ? ` 외 ${items.length - 1}건` : '';
     const text = todayOpen.length ? `🔔 오늘 예약 오픈: ${first}${more}` : `🎟️ 지금 예약 가능: ${first}${more}`;
     return h('div', { class: `alert-banner ${todayOpen.length ? 'hot' : ''}` },
-      h('button', { class: 'alert-text', type: 'button', onclick: () => this.setTab('check') }, text),
+      h('button', { class: 'alert-text', type: 'button', onclick: () => this.setTab(isBook(todayOpen[0] || items[0]) ? 'book' : 'check') }, text),
       h('button', { class: 'alert-x', type: 'button', 'aria-label': '오늘 그만 보기', onclick: () => { sessionStorage.setItem('tp.alertOff', today); this.renderHeader(); } }, '✕'));
   }
 
@@ -282,10 +287,13 @@ export class App {
       nav.append(btn);
     });
     const me = this.store.me;
-    const todo = (this.data.checklist || []).filter(c => !c.done && !c.onsite && (!me || !c.who || c.who === '둘 다' || c.who === me)).length;
+    const todo = (this.data.checklist || []).filter(c => !isBook(c) && !c.done && !c.onsite && (!me || !c.who || c.who === '둘 다' || c.who === me)).length;
+    const bookN = (this.data.checklist || []).filter(bookTodo).length;
     nav.append(
+      h('button', { class: `tab ${this.tab === 'book' ? 'active' : ''}`, type: 'button', onclick: () => this.setTab('book') },
+        h('b', null, '🎟️ 예약·발권', bookN ? h('em', { class: 'count' }, String(bookN)) : null), h('small', null, '언제 무엇을 예약')),
       h('button', { class: `tab ${this.tab === 'check' ? 'active' : ''}`, type: 'button', onclick: () => this.setTab('check') },
-        h('b', null, '✅ 예약', todo ? h('em', { class: 'count' }, String(todo)) : null), h('small', null, '체크리스트')),
+        h('b', null, '✅ 할 일', todo ? h('em', { class: 'count' }, String(todo)) : null), h('small', null, '출발 전 준비')),
       h('button', { class: `tab ${this.tab === 'guide' ? 'active' : ''}`, type: 'button', onclick: () => this.setTab('guide') },
         h('b', null, '🧭 가이드'), h('small', null, '기차·지하철·중국 팁')),
       h('button', { class: `tab ${this.tab === 'info' ? 'active' : ''}`, type: 'button', onclick: () => this.setTab('info') },
@@ -1165,7 +1173,101 @@ export class App {
     }
   }
 
-  // ── 예약 체크리스트 ───────────────────────────────────
+
+  // ── 예약·발권 탭: 언제 열리고, 어디서, 얼마, 누가 ─────────
+  renderBook() {
+    const v = this.el.otherView;
+    clear(v);
+    const today = chinaToday();
+    const items = (this.data.checklist || []).filter(isBook);
+    const site = c => c.onsite || c.need === '현장';
+    const g = { now: [], soon: [], opt: [], site: [], done: [] };
+    for (const c of items) {
+      if (c.done) g.done.push(c);
+      else if (site(c)) g.site.push(c);
+      else if (c.need === '선택') g.opt.push(c);
+      else if (c.opens && c.opens > today) g.soon.push(c);
+      else g.now.push(c);
+    }
+    const byDate = (a, b) => String(a.date || '').localeCompare(String(b.date || ''));
+    g.now.sort(byDate); g.site.sort(byDate); g.opt.sort(byDate); g.done.sort(byDate);
+    g.soon.sort((a, b) => a.opens.localeCompare(b.opens) || byDate(a, b));
+    const must = items.filter(c => !site(c) && c.need !== '선택');
+    const mustDone = must.filter(c => c.done).length;
+    const who = [...new Set(items.map(c => c.who).filter(Boolean))].join(' · ');
+
+    // 요약
+    const next = g.soon[0];
+    v.append(h('div', { class: 'card bk-head' },
+      h('h3', null, '🎟️ 예약·발권 한눈에'),
+      h('p', { class: 'muted small' }, `담당: ${who || '-'} · 2026년 11월 조사 기준 · 예약할 때 공식 화면에서 시간·요금 한 번 더 확인`),
+      h('div', { class: 'progress' },
+        h('div', { class: 'bar' }, h('i', { style: { width: must.length ? `${Math.round(mustDone / must.length * 100)}%` : '0%' } })),
+        h('span', null, `꼭 할 예약 ${mustDone}/${must.length}`)),
+      h('div', { class: 'bk-stats' },
+        h('span', { class: 'bk-stat hot' }, h('b', null, String(g.now.length)), '지금 가능'),
+        h('span', { class: 'bk-stat' }, h('b', null, String(g.soon.length)), '오픈 예정'),
+        h('span', { class: 'bk-stat' }, h('b', null, String(g.site.length)), '현장 구매'),
+        h('span', { class: 'bk-stat ok' }, h('b', null, String(g.done.length)), '완료')),
+      next ? h('div', { class: 'bk-next' }, '⏰ 다음 오픈 ', h('b', null, `${mdLabel(next.opens)} · D-${dayDiff(today, next.opens)}`), ` — ${g.soon.filter(c => c.opens === next.opens).map(c => c.title).join(', ')}`) : null));
+
+    const sec = (title, hint, list, opts = {}) => {
+      if (!list.length) return;
+      v.append(h('h3', { class: 'group-title' }, title, hint ? h('small', null, ` ${hint}`) : null));
+      if (opts.byOpen) {
+        // 오픈일별로 묶어서 달력처럼
+        const days = [...new Set(list.map(c => c.opens))];
+        for (const d of days) {
+          const n = dayDiff(today, d);
+          v.append(h('div', { class: 'card bk-day' },
+            h('div', { class: 'bk-day-head' }, h('b', null, `${mdLabel(d)} 오픈`), h('span', { class: `pill ${n <= 3 ? 'hot' : 'soon'}` }, n === 0 ? '오늘!' : `D-${n}`)),
+            list.filter(c => c.opens === d).map(c => this.bookRow(c, today))));
+        }
+      } else {
+        v.append(h('div', { class: 'card bk-list' }, list.map(c => this.bookRow(c, today))));
+      }
+    };
+    if (!this.store.canEdit) v.append(h('div', { class: 'card note-box' }, '체크 표시는 편집 권한(토큰)이 있어야 같이 저장돼요.'));
+    sec('🔥 지금 예약하기', '이미 열렸거나 열리는 날이 정해지지 않은 것', g.now);
+    sec('⏳ 오픈 예정', '이 날짜에 예약·판매가 열려요', g.soon, { byOpen: true });
+    sec('🎫 현장에서 사요', '미리 예약 없음', g.site);
+    sec('🤔 필요할 때만', '일정상 안 해도 되는 것', g.opt);
+    sec('✅ 완료', '', g.done);
+    if (!items.length) v.append(h('div', { class: 'card empty' }, '예약 항목이 없어요'));
+    v.append(h('div', { class: 'list-end' }));
+  }
+
+  bookRow(c, today) {
+    const NEED = { 필수: 'must', 권장: 'rec', 선택: 'opt', 현장: 'site', 확인: 'check' };
+    let open = null;
+    if (!c.done && !c.onsite && c.opens) {
+      const n = dayDiff(today, c.opens);
+      open = n > 0 ? h('span', { class: 'pill soon' }, `${mdLabel(c.opens)} 오픈`) : h('span', { class: 'pill open' }, n === 0 ? '오늘 오픈!' : '예약 가능');
+    }
+    const box = h('button', {
+      class: `check-box ${c.done ? 'on' : ''}`, type: 'button', disabled: !this.store.canEdit,
+      'aria-label': c.done ? '완료 취소' : '완료',
+      onclick: () => this.store.commit({ type: 'check.update', id: c.id, patch: { done: !c.done, doneBy: this.store.me || '', doneAt: Date.now() } }),
+    }, c.done ? '✓' : '');
+    const ctx = this.richCtx();
+    return h('div', { class: `bk-row ${c.done ? 'is-done' : ''}` },
+      box,
+      h('div', { class: 'bk-main' },
+        h('div', { class: 'bk-title' }, c.title),
+        h('div', { class: 'check-meta' },
+          c.need ? h('span', { class: `pill need-${NEED[c.need] || 'check'}` }, c.need) : null,
+          c.date ? h('span', { class: 'pill' }, `📅 ${mdLabel(c.date)} 방문`) : null,
+          c.for ? h('span', { class: 'pill who' }, `👤 ${c.for}`) : null,
+          open,
+          c.done && c.doneBy ? h('span', { class: 'pill muted' }, `${c.doneBy} 완료`) : null),
+        c.where ? h('div', { class: 'bk-line' }, '📱 ', inline(c.where, ctx)) : null,
+        c.cost ? h('div', { class: 'bk-line' }, '💰 ', c.cost) : null,
+        c.note ? h('details', { class: 'bk-note' }, h('summary', null, '자세히'), h('div', null, this.rich(c.note))) : null,
+        c.link ? h('a', { class: 'chip', href: c.link, target: '_blank', rel: 'noopener' }, '🔗 예약/참고 링크') : null),
+      this.editing ? h('button', { class: 'btn sm', type: 'button', onclick: () => E.editCheck(this, c) }, '✏️') : null);
+  }
+
+  // ── 준비 체크리스트 ───────────────────────────────────
   renderCheck() {
     const v = this.el.otherView;
     clear(v);
@@ -1180,7 +1282,7 @@ export class App {
     }, p === '전체' ? '전체' : `${p}${p === this.store.me ? ' (나)' : ''}`))));
     // 담당이 나 / 둘 다 / 미정 인 것만
     const mine = c => who === '전체' || !c.who || c.who === '둘 다' || c.who === who;
-    const items = (this.data.checklist || []).filter(mine);
+    const items = (this.data.checklist || []).filter(c => !isBook(c)).filter(mine);
     const groups = { now: [], soon: [], onsite: [], done: [] };
     for (const c of items) {
       if (c.done) groups.done.push(c);

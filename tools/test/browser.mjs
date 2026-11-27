@@ -264,18 +264,25 @@ async function main() {
   } else {
     log('고덕 경로 정보 없음 (routes.bat 실행 전) — 표시 시험 건너뜀');
   }
-  // 예약 체크리스트 사람별
-  await A.clickText('.tab', '예약');
+  // 예약·발권 탭: 오픈일별로 묶어서 표시
+  await A.clickText('.tab', '예약·발권');
+  await A.waitFor(`!!document.querySelector('.bk-row')`);
+  const bk = await A.eval(`[...document.querySelectorAll('.bk-title')].map(x => x.textContent).join('|')`);
+  assert.ok(bk.includes('졸정원 입장권') && bk.includes('항저우 고속철') && !bk.includes('eSIM'), '예약 탭 항목');
+  await A.shot('13a-book.png');
+  log('예약·발권 탭 (예약 항목만 · 오픈일별)');
+  // 할 일(준비) 사람별
+  await A.clickText('.tab', '할 일');
   await A.waitFor(`!!document.querySelector('.check-who')`);
   const jh = await A.eval(`[...document.querySelectorAll('.check-title')].map(x => x.textContent).join('|')`);
-  assert.ok(jh.includes('사행창고') && !jh.includes('항저우 고속철'), '재형 필터');
+  assert.ok(jh.includes('호텔에 확인 메시지') && !jh.includes('졸정원'), '재형 필터');
   await A.clickText('.check-who .seg-btn', P2);
   await A.idle(300);
   const sj = await A.eval(`[...document.querySelectorAll('.check-title')].map(x => x.textContent).join('|')`);
-  assert.ok(sj.includes('항저우 고속철') && !sj.includes('사행창고') && sj.includes('알리페이'), '서준 필터');
+  assert.ok(!sj.includes('호텔에 확인 메시지') && sj.includes('알리페이'), '서준 필터');
   await A.shot('13c-check-sj.png');
   await A.clickText('.check-who .seg-btn', P1);
-  log('예약 체크리스트 사람별 보기 (둘 다 항목은 양쪽에)');
+  log('할 일 체크리스트 사람별 보기 (둘 다 항목은 양쪽에)');
 
   // Day5 메모
   await A.clickText('.tab', 'Day 5');
@@ -343,7 +350,7 @@ async function main() {
   await B.clickText('.tab', '예약');
   await B.waitFor(`!!document.querySelector('.check-box')`);
   await Promise.all([
-    B.eval(`(() => { [...document.querySelectorAll('.check-row')].find(r => r.textContent.includes('예원 입장권')).querySelector('.check-box').click(); return true; })()`),
+    B.eval(`(() => { [...document.querySelectorAll('.bk-row')].find(r => r.textContent.includes('예원 입장권')).querySelector('.check-box').click(); return true; })()`),
     A.eval(`(() => { [...document.querySelectorAll('#stop-d3-07 .edit-row .btn')].find(b => b.textContent.includes('⬆')).click(); return true; })()`),
   ]);
   await A.waitFor(`(async () => (await (await fetch('/__gh/_state')).json()).puts.length >= 3)()`, 25000, '두 저장 모두 끝');
@@ -377,7 +384,7 @@ async function main() {
   log('오프라인에서 고친 것 → 연결되자 자동 업로드');
 
   // 예약 오픈 알림 띠: 오늘 열리는 항목을 추가하면 날짜 탭 위에 뜸
-  await A.clickText('.tab', '예약');
+  await A.clickText('.tab', '할 일');
   await A.waitFor(`!!document.querySelector('.other-view .add-btn')`, 5000, '항목 추가 버튼');
   await A.click('.other-view .add-btn');
   await A.waitFor(`!!document.querySelector('.editor input[type=date]')`);
