@@ -9,7 +9,7 @@ import { tilesForTrip, prefetchTiles, countCachedTiles } from './tiles.js';
 import * as E from './editor.js';
 import { CAT, MOVE } from './consts.js';
 import { distM } from './gcj.js';
-import { GUIDE_ASOF, TRAIN_STEPS, STATIONS, SECTIONS, AI_TARGETS, findStation, buildPrompt, photoUrl, STATION_PHOTOS } from './guide.js';
+import { GUIDE_ASOF, TRAIN_STEPS, STATIONS, SECTIONS, findStation, photoUrl, STATION_PHOTOS } from './guide.js';
 import { SITES, findSite, siteMapSvg } from './sites.js';
 import { PHOTOS, findPhoto, photoPath } from './photos.js';
 
@@ -90,7 +90,7 @@ export class App {
     this.setupSwipe();
     this.store.addEventListener('status', () => this.renderHeader());
     this.store.addEventListener('rejected', e => {
-      toast(`상대방이 먼저 바꾼 부분과 겹쳐서 ${e.detail.length}건은 적용 못 했다`, { ms: 5000 });
+      toast(`상대방이 먼저 바꾼 부분과 겹쳐서 ${e.detail.length}건은 적용하지 못했습니다`, { ms: 5000 });
     });
     setInterval(() => this.renderHeader(), 60000);
   }
@@ -128,7 +128,7 @@ export class App {
       this.el.tabs.hidden = true;
       if (this.store.status === 'error' || this.store.status === 'offline' || this.store.status === 'auth') {
         clear(this.el.loading).append(
-          h('p', null, this.store.status === 'offline' ? '인터넷 연결이 필요하다 (처음 한 번)' : '일정을 불러오지 못했다'),
+          h('p', null, this.store.status === 'offline' ? '인터넷 연결이 필요합니다 (처음 한 번)' : '일정을 불러오지 못했습니다'),
           h('p', { class: 'muted' }, String((this.store.error && this.store.error.message) || '')),
           h('button', { class: 'btn primary', type: 'button', onclick: () => this.store.refresh({ force: true }) }, '다시 시도'));
       }
@@ -214,12 +214,12 @@ export class App {
           title: '편집 모드',
           onclick: () => {
             this.store.setPref('edit', !this.store.prefs.edit);
-            toast(this.store.prefs.edit ? '편집 모드 켬 — 카드마다 수정 버튼이 생긴다' : '편집 모드 끔');
+            toast(this.store.prefs.edit ? '편집 모드 켬 — 카드마다 수정 버튼이 생깁니다' : '편집 모드 끔');
           },
         }, '✏️') : null,
         h('button', { class: 'icon-btn', type: 'button', title: '설정', onclick: () => this.openSettings() }, '⚙️')),
     );
-    if (this.editing) hd.append(h('div', { class: 'edit-banner' }, '✏️ 편집 모드 — 고친 내용은 바로 같이 쓰는 사람에게도 반영된다'));
+    if (this.editing) hd.append(h('div', { class: 'edit-banner' }, '✏️ 편집 모드 — 고친 내용은 바로 같이 쓰는 사람에게도 반영됩니다'));
     const s = this.store;
     const alert = this.bookingAlert();
     if (alert) hd.append(alert);
@@ -256,18 +256,18 @@ export class App {
   onSyncClick() {
     const s = this.store;
     if (s.status === 'auth') {
-      toast('GitHub 토큰 권한/만료 문제이다. 설정 → 동기화 상태를 확인할 것', { ms: 5000 });
+      toast('GitHub 토큰 권한/만료 문제입니다. 설정 → 동기화 상태를 확인하십시오', { ms: 5000 });
       return;
     }
     if (navigator.onLine === false) {
-      toast('지금은 오프라인이다 — 저장된 일정을 그대로 보여준다');
+      toast('지금은 오프라인입니다 — 저장된 일정을 그대로 보여줍니다');
       return;
     }
     toast('최신 일정 받는 중…');
     s.refresh({ force: true }).then(() => {
       if (s.pending.length) s.flush();
-      if (s.status === 'ok' || s.status === 'pending') toast('최신 일정으로 업데이트했다');
-      else toast('연결이 안 돼서 저장된 일정을 계속 보여준다', { ms: 3500 });
+      if (s.status === 'ok' || s.status === 'pending') toast('최신 일정으로 업데이트했습니다');
+      else toast('연결이 안 돼서 저장된 일정을 계속 보여줍니다', { ms: 3500 });
     });
   }
 
@@ -328,7 +328,7 @@ export class App {
     // 머리 카드
     const head = this.el.dayHead;
     clear(head);
-    const route = stops.length ? `${shortName(stops[0])} → … → ${shortName(stops[stops.length - 1])} · ${stops.length}곳` : '아직 장소가 없다';
+    const route = stops.length ? `${shortName(stops[0])} → … → ${shortName(stops[stops.length - 1])} · ${stops.length}곳` : '아직 장소가 없습니다';
     head.append(
       h('div', { class: 'dh-sub' }, `DAY ${idx + 1} · ${mdLabel(day.date)}`, isToday ? h('span', { class: 'today-badge' }, '오늘') : null),
       h('h2', { class: 'dh-title' }, day.title || ''),
@@ -413,7 +413,7 @@ export class App {
 
   async copy(text, hint = '') {
     const ok = await copyText(text);
-    toast(ok ? `복사했다${hint ? ` · ${hint}` : ''}` : '복사하지 못했다');
+    toast(ok ? `복사했습니다${hint ? ` · ${hint}` : ''}` : '복사하지 못했습니다');
   }
 
   copyZh(text) {
@@ -520,8 +520,10 @@ export class App {
       }, done ? '✓' : '')));
 
     // 일정 데이터에 직접 넣은 사진(암호화돼 공개되지 않음)이 있으면 그것, 없으면 앱에 든 자유 라이선스 사진
+    const shared = s.photoRef && this.data.trip && this.data.trip.photos && this.data.trip.photos[s.photoRef];
     const ph = s.photo ? { data: s.photo, alt: s.name, author: s.photoCredit || '직접 넣은 사진', license: '', src: '', page: s.photoSrc || '' }
-      : (s.photoRef && PHOTOS.find(x => x.id === s.photoRef)) || findPhoto(s);
+      : shared ? { data: shared.data, alt: s.name, author: shared.credit || '직접 넣은 사진', license: '', src: '', page: shared.src || '' }
+        : (s.photoRef && PHOTOS.find(x => x.id === s.photoRef)) || findPhoto(s);
     if (ph) card.append(this.photoFigure(ph, 'stop-photo'));
 
     const meta = [];
@@ -608,8 +610,6 @@ export class App {
     if (st) items.push(item(`${st.icon} ${st.name} 안내 (타는 법·나가는 법)`, () => setTimeout(() => this.openStation(st), 120)));
     const site = findSite(s);
     if (site) items.push(item(`🗺️ ${site.name} 내부 동선 지도`, () => setTimeout(() => this.openSite(site), 120)));
-    items.push(item(ctx.prev ? `🤖 AI에게 묻기: ${shortName(ctx.prev)} → 여기 가는 법` : '🤖 AI에게 여기 가는 법 묻기',
-      () => setTimeout(() => this.openAskAI(this.stopPrompt(day, s, ctx.prev)), 120)));
     items.push(item(this.store.done.has(s.id) ? '↩️ 완료 취소' : '✅ 완료 표시', () => this.store.toggleDone(s.id)));
     if (this.store.canEdit) {
       items.push(item('✏️ 이 장소 수정', () => E.editStop(this, { day, track, stop: s })));
@@ -624,7 +624,7 @@ export class App {
     if (!this.map) return;
     this.el.mapCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setTimeout(() => {
-      if (!this.map.focus(id)) toast('이 장소는 지도 좌표가 없다');
+      if (!this.map.focus(id)) toast('이 장소는 지도 좌표가 없습니다');
     }, 350);
   }
 
@@ -683,17 +683,17 @@ export class App {
         '크롬 **⋮ → 설정 → 개인 정보 보호 및 보안 → 사이트 설정 → 위치** → 이 사이트를 **허용**',
         '윈도우: **설정 → 개인 정보 및 보안 → 위치** → 위치 서비스·앱의 위치 액세스 켜기',
         '맥: **시스템 설정 → 개인정보 보호 및 보안 → 위치 서비스** → Chrome 켜기',
-        'PC는 GPS가 없어서 위치가 수백 m 틀릴 수 있다',
+        'PC는 GPS가 없어서 위치가 수백 m 틀릴 수 있습니다',
       ]],
     ];
     let cur = /iPhone|iPad/.test(UA) ? 'iphone' : /Android/.test(UA) ? 'android' : 'pc';
     const body = h('div', { class: 'loc-help' });
     const draw = () => {
       clear(body).append(
-        h('p', null, inline('지도에 내 위치를 보려면 이 앱에 **위치 권한**이 필요하다. 쓰는 기기를 고를 것.')),
+        h('p', null, inline('지도에 내 위치를 보려면 이 앱에 **위치 권한**이 필요합니다. 쓰는 기기를 고르십시오.')),
         h('div', { class: 'seg' }, tabs.map(([id, label]) => h('button', { class: `seg-btn ${cur === id ? 'on' : ''}`, type: 'button', onclick: () => { cur = id; draw(); } }, label))),
         this.stepList(tabs.find(t => t[0] === cur)[2]),
-        h('p', { class: 'muted small' }, '위치 정보는 내 폰 지도에만 쓰이고 어디에도 저장·전송되지 않는다.'));
+        h('p', { class: 'muted small' }, '위치 정보는 내 폰 지도에만 쓰이고 어디에도 저장·전송되지 않습니다.'));
     };
     draw();
     openSheet({ title: '📍 위치 권한 켜는 법', body, full: true });
@@ -735,7 +735,7 @@ export class App {
     }
     this.map.startLocate(pos => { this.myPos = pos; this.updateNextDist(); }, msg => {
       if (/권한/.test(msg)) this.openLocationHelp();
-      else toast(`${msg} — 실내라면 창가로, 휴대폰 위치(GPS)가 켜져 있는지 확인할 것`, { ms: 4500 });
+      else toast(`${msg} — 실내라면 창가로, 휴대폰 위치(GPS)가 켜져 있는지 확인하십시오`, { ms: 4500 });
       this.render();
     });
     this.render();
@@ -797,62 +797,49 @@ export class App {
     ]);
   }
 
-  // ── 가이드 탭 (앱에 내장된 교통·생활 안내) ─────────────
+  // ── 가이드 탭: 하위 탭으로 나눠서 ─────────────────────
   renderGuide() {
     const v = this.el.otherView;
     clear(v);
-    v.append(h('div', { class: 'card guide-intro' },
-      h('h3', null, '🧭 중국 처음이라면'),
-      h('p', null, '기차·지하철 타는 순서, 역 안에서 몇 층으로 가는지, 갑자기 나오는 짐검사까지 정리했다. 중국어 글자는 누르면 복사, ⤢ 누르면 크게 보여준다.'),
-      h('p', { class: 'muted small' }, `${GUIDE_ASOF} · 역 구조·규정은 바뀔 수 있으니 현장 표지판과 직원 안내가 우선이다.`),
-      h('button', { class: 'btn sm', type: 'button', onclick: () => this.openLocationHelp() }, '📍 내 위치가 안 나올 때 (위치 권한 켜는 법)')));
-
-    // 기차 타는 법
-    const train = h('details', { class: 'card info-sec', open: this.guideOpen ? this.guideOpen.has('train') : true },
-      h('summary', null, h('h3', null, '🚄 기차(고속철) 타는 법 — 처음부터 끝까지')),
-      this.stepList(TRAIN_STEPS));
-    this.trackGuideOpen(train, 'train');
-    v.append(train);
-
-    // 역별 안내
-    v.append(h('div', { class: 'card' },
-      h('h3', null, '🚉 역별 안내 — 몇 층에서 타고 어디로 나가는지'),
-      h('div', { class: 'st-grid' }, STATIONS.map(st => h('button', { class: 'st-card', type: 'button', onclick: () => this.openStation(st) },
-        h('b', null, `${st.icon} ${st.name}`),
-        h('span', { lang: 'zh-CN' }, st.zh),
-        h('small', null, st.sub))))));
-
-    // 정원 내부 동선
-    v.append(h('div', { class: 'card' },
-      h('h3', null, '🏯 정원 내부 동선 지도 — 오래 걸리는 곳'),
-      h('p', { class: 'muted small' }, '2~3시간 걸리는 큰 정원은 안에서 길을 잃기 쉽다. 추천 순서대로 그린 개략도와 꼭 볼 곳이다.'),
-      h('div', { class: 'st-grid' }, SITES.map(site => h('button', { class: 'st-card', type: 'button', onclick: () => this.openSite(site) },
-        h('b', null, `🗺️ ${site.name}`),
-        h('span', { lang: 'zh-CN' }, `${site.zh} · ${site.city}`),
-        h('small', null, site.time))))));
-
-    // 주제별
-    SECTIONS.forEach(sec => {
-      const card = h('details', { class: 'card info-sec', open: this.guideOpen ? this.guideOpen.has(sec.id) : false },
-        h('summary', null, h('h3', null, `${sec.icon} ${sec.title}`)),
-        h('div', { class: 'rt' }, this.rich(sec.body)));
-      this.trackGuideOpen(card, sec.id);
-      v.append(card);
-    });
-
-    // AI에게 묻기 (자유 질문)
-    const from = h('input', { class: 'inp', placeholder: '출발 (예: 塘桥역, 숙소)' });
-    const to = h('input', { class: 'inp', placeholder: '도착 (예: 上海虹桥站 G7xxx 탑승)' });
-    const q = h('textarea', { class: 'inp', rows: 3, placeholder: '궁금한 것 (예: 기차 타려면 몇 층으로 가요? 짐검사에서 뭘 꺼내야 해요?)' });
-    v.append(h('div', { class: 'card ai-card' },
-      h('h3', null, '🤖 AI에게 묻기'),
-      h('p', { class: 'muted small' }, '여기 없는 상황은 AI에게 물어볼 것. 질문을 "단계별·몇 층·표지판 중국어·확실하지 않으면 확인 필요 표시" 형식으로 만들어서 넘겨준다. 장소 카드 ⋯ 메뉴에서는 그 구간 정보가 자동으로 들어간다.'),
-      h('div', { class: 'editor' }, from, to, q),
-      h('div', { class: 'row ai-go' }, h('button', {
-        class: 'btn primary', type: 'button',
-        onclick: () => this.openAskAI(buildPrompt({ from: from.value.trim(), to: to.value.trim(), question: q.value.trim(), context: this.tripContext() })),
-      }, '질문 만들기 →'))));
+    const sec = id => SECTIONS.find(s => s.id === id);
+    const SUBS = [
+      ['train', '🚄', '기차 타는 법'], ['stations', '🚉', '역별 안내'], ['gardens', '🏯', '정원 지도'], ['metro', '🚇', '지하철'],
+      ['bus', '🚌', '버스·택시'], ['money', '💳', '결제·인터넷'], ['first', '😳', '처음이면'], ['words', '🀄', '표지판·회화'], ['sos', '🆘', '비상'],
+    ];
+    const cur = SUBS.some(s => s[0] === this.guideSub) ? this.guideSub : 'train';
+    v.append(this.subTabs(SUBS, cur, id => { this.guideSub = id; this.render(); this.el.scroller.scrollTop = 0; }));
+    const card = (title, ...kids) => h('div', { class: 'card' }, title ? h('h3', null, title) : null, ...kids);
+    const secCard = id => { const s = sec(id); return s ? card(`${s.icon} ${s.title}`, h('div', { class: 'rt' }, this.rich(s.body))) : null; };
+    const grid = (list, onPick, label) => h('div', { class: 'st-grid' }, list.map(x => h('button', { class: 'st-card', type: 'button', onclick: () => onPick(x) }, ...label(x))));
+    if (cur === 'train') {
+      v.append(card('🚄 기차(고속철) 타는 순서', this.stepList(TRAIN_STEPS)),
+        card('🚉 역마다 다른 점', h('p', { class: 'muted small' }, '몇 층에서 타고 어디로 나가는지는 역별 안내에 있다.'),
+          grid(STATIONS, st => this.openStation(st), st => [h('b', null, `${st.icon} ${st.name}`), h('span', { lang: 'zh-CN' }, st.zh)])));
+    } else if (cur === 'stations') {
+      v.append(card('🚉 역별 안내', h('p', { class: 'muted small' }, '역을 누르면 층 구조·타는 순서·나가는 순서가 나온다.'),
+        grid(STATIONS, st => this.openStation(st), st => [h('b', null, `${st.icon} ${st.name}`), h('span', { lang: 'zh-CN' }, st.zh), h('small', null, st.sub)])));
+    } else if (cur === 'gardens') {
+      v.append(card('🏯 정원 내부 동선 지도', h('p', { class: 'muted small' }, '2~3시간 걸리는 큰 정원의 추천 순서와 꼭 볼 곳을 그린 개략도이다.'),
+        grid(SITES, site => this.openSite(site), site => [h('b', null, `🗺️ ${site.name}`), h('span', { lang: 'zh-CN' }, `${site.zh} · ${site.city}`), h('small', null, site.time)])));
+    } else if (cur === 'metro') v.append(secCard('metro'));
+    else if (cur === 'bus') v.append(secCard('bus'), secCard('taxi'), secCard('citybus'));
+    else if (cur === 'money') v.append(secCard('pay-net'));
+    else if (cur === 'first') v.append(secCard('surprise'), secCard('entry'));
+    else if (cur === 'words') v.append(secCard('signs'), secCard('phrases'));
+    else if (cur === 'sos') {
+      v.append(secCard('sos'), card('📍 내 위치가 안 나올 때', h('button', { class: 'btn sm', type: 'button', onclick: () => this.openLocationHelp() }, '위치 권한 켜는 법 보기')));
+    }
+    v.append(h('p', { class: 'muted small guide-asof' }, `${GUIDE_ASOF} · 역 구조·규정은 바뀔 수 있으므로 현장 표지판과 직원 안내를 우선한다. 중국어는 누르면 복사, ⤢는 크게 보기.`));
     v.append(h('div', { class: 'list-end' }));
+  }
+
+  // 하위 탭 줄 (가이드·정보 공용)
+  subTabs(subs, cur, onPick) {
+    const row = h('div', { class: 'sub-tabs' }, subs.map(([id, icon, label]) => h('button', {
+      class: `sub-tab ${id === cur ? 'on' : ''}`, type: 'button', onclick: () => onPick(id),
+    }, h('span', null, icon), ' ', label)));
+    requestAnimationFrame(() => { const a = row.querySelector('.sub-tab.on'); if (a) a.scrollIntoView({ inline: 'center', block: 'nearest' }); });
+    return row;
   }
 
   trackGuideOpen(card, id) {
@@ -891,14 +878,6 @@ export class App {
       full: true,
       actions: [
         h('a', { class: 'btn', ...this.linkAttrs(MAP.search({ zh: st.zh }, lo)) }, `🗺️ ${MAP.name}에서 보기`),
-        h('button', {
-          class: 'btn', type: 'button',
-          onclick: () => this.openAskAI(buildPrompt({
-            to: st.zh,
-            context: this.tripContext(),
-            question: `${st.zh}(${st.name})에서 고속철 타는 법과 내려서 나가는 법을 자세히 알려줘. 몇 층이 출발층인지, 지하철에서 어떻게 올라가는지, 여권 확인·짐검사 위치, 검표구 찾는 법, 도착 후 지하철·택시 타는 곳까지.`,
-          })),
-        }, '🤖 AI에게 더 묻기'),
       ],
     });
   }
@@ -921,43 +900,6 @@ export class App {
       title: `🚄 ${from ? shortName(from) : ''} → ${shortName(to)}`,
       body,
       full: true,
-      actions: [h('button', {
-        class: 'btn', type: 'button',
-        onclick: () => this.openAskAI(this.stopPrompt(null, to, from)),
-      }, '🤖 이 구간 AI에게 묻기')],
-    });
-  }
-
-  // 일정 공통 맥락 (숙소 등) — AI 질문에 덧붙임
-  tripContext() {
-    const out = [];
-    const hotel = (this.data.days || []).flatMap(d => (d.tracks || []).flatMap(t => t.stops || [])).find(s => s.cat === 'hotel' && (s.zh || s.name));
-    if (hotel) out.push(`숙소: ${[hotel.zh, hotel.station && `가까운 지하철역 ${hotel.station}`].filter(Boolean).join(' / ') || hotel.name}`);
-    out.push('여권으로 트립닷컴/12306에서 산 전자 기차표, 알리페이 사용, 고덕지도 사용');
-    return out;
-  }
-
-  stopPrompt(day, s, prev) {
-    const place = x => x ? [x.name, x.zh && x.zh !== x.name ? x.zh : ''].filter(Boolean).join(' / ') : '';
-    const mv = s.move || {};
-    const m = MOVE[mv.mode];
-    const ctx = [];
-    if (mv.text) ctx.push(`일정 메모: ${mv.text}`);
-    const r = s.route && prev && s.route.from === prev.id ? s.route : null;
-    if (r && r.steps && r.steps.length) ctx.push(`고덕 경로: ${r.steps.map(x => `${x.line} ${x.from}→${x.to}`).join(', ')}`);
-    if (prev && prev.station) ctx.push(`출발지 근처 지하철역: ${prev.station}`);
-    if (s.station) ctx.push(`목적지 근처 지하철역: ${s.station}`);
-    if (s.addr) ctx.push(`목적지 주소: ${s.addr}`);
-    const d = day || (this.data.days || []).find(x => (x.tracks || []).some(t => (t.stops || []).includes(s)));
-    return buildPrompt({
-      from: prev ? place(prev) : '현재 위치',
-      to: place(s),
-      mode: m && mv.mode !== 'none' ? m.label : '',
-      when: [d && d.date ? mdLabel(d.date) : '', s.time || ''].filter(Boolean).join(' '),
-      context: [...ctx, ...this.tripContext()],
-      question: mv.mode === 'train'
-        ? '이 기차 구간을 처음 타. 출발역에서 몇 층으로 가서 어떻게 타는지, 도착역에서 어떻게 나가서 다음 교통수단을 타는지 알려줘.'
-        : '출발지에서 목적지까지 가장 쉬운 방법과, 정류장·역·출구에서 길을 잃지 않게 단계별로 알려줘.',
     });
   }
 
@@ -1035,38 +977,6 @@ export class App {
       className: 'site-sheet-wrap',
       actions: [
         h('a', { class: 'btn', ...this.linkAttrs(MAP.search({ zh: site.zh }, lo)) }, `🗺️ ${MAP.name}에서 보기`),
-        h('button', {
-          class: 'btn', type: 'button',
-          onclick: () => this.openAskAI(buildPrompt({
-            to: `${site.zh} (${site.city})`,
-            context: [`추천 동선: ${site.spots.map(s => s.zh).join(' → ')}`],
-            question: `${site.zh} 안을 처음 둘러봐. 위 동선이 맞는지, 놓치면 아까운 곳과 사진 포인트, 화장실·출구 위치, 시간이 부족할 때 줄이는 방법을 알려줘.`,
-          })),
-        }, '🤖 AI에게 더 묻기'),
-      ],
-    });
-  }
-
-  // 질문 미리보기 → 복사 + AI 열기
-  openAskAI(prompt) {
-    const ta = h('textarea', { class: 'inp ai-prompt', rows: 12 });
-    ta.value = prompt;
-    const open = t => {
-      const text = ta.value.trim();
-      copyText(text);
-      window.open(t.url(text), '_blank', 'noopener');
-    };
-    openSheet({
-      title: '🤖 AI에게 묻기',
-      full: true,
-      className: 'ai-sheet',
-      body: h('div', { class: 'editor' },
-        h('p', { class: 'muted small' }, '아래 질문을 고쳐도 된다. 버튼을 누르면 질문이 복사되고 AI가 열린다 (질문이 안 들어가 있으면 붙여넣기). AI 답은 틀릴 수 있으니 층·출구 번호는 현장 표지판으로 꼭 확인할 것.'),
-        ta,
-        h('p', { class: 'muted small' }, '중국 현지 와이파이/유심에서는 ChatGPT·Claude가 막힌다 (한국 로밍은 OK). 그럴 땐 [질문 복사] 후 豆包·DeepSeek 같은 중국 AI에 붙여넣기.')),
-      actions: [
-        ...AI_TARGETS.map(t => h('button', { class: 'btn primary', type: 'button', onclick: () => open(t) }, t.label)),
-        h('button', { class: 'btn', type: 'button', onclick: () => this.copy(ta.value.trim(), 'AI 앱에 붙여넣기') }, '질문 복사'),
       ],
     });
   }
@@ -1075,9 +985,18 @@ export class App {
   renderInfo() {
     const v = this.el.otherView;
     clear(v);
+    // 하위 탭: 정보 섹션 id → 묶음 (모르는 섹션은 「기타」)
+    const GROUP = { 'i-pay': 'money', 'i-flight': 'trip', 'i-hotel': 'trip', 'i-carry': 'trip', 'i-transport': 'trip', 'i-entry': 'entry', 'i-mounjaro': 'mj', 'i-weather': 'life', 'i-dianping': 'life', 'i-shop': 'life', 'i-phrase': 'words', 'i-sos': 'sos' };
+    const sectionsAll = this.data.info || [];
+    const groupOf = sec => GROUP[sec.id] || 'etc';
+    const SUBS = [['money', '💱', '환율·결제'], ['trip', '✈️', '항공·숙소'], ['entry', '🛂', '입국·통신'], ['mj', '💉', '마운자로'], ['life', '🧥', '생활·쇼핑'], ['words', '🗣️', '중국어'], ['sos', '🆘', '긴급']]
+      .filter(([id]) => id === 'money' || sectionsAll.some(x => groupOf(x) === id));
+    if (sectionsAll.some(x => groupOf(x) === 'etc')) SUBS.push(['etc', '📌', '기타']);
+    const cur = SUBS.some(x => x[0] === this.infoSub) ? this.infoSub : 'money';
+    v.append(this.subTabs(SUBS, cur, id => { this.infoSub = id; this.render(); this.el.scroller.scrollTop = 0; }));
     const rate = this.store.rate;
     const live = this.store.prefs.rateLive;
-    const hint = '금액을 넣으면 원으로 바꿔준다';
+    const hint = '금액을 넣으면 원으로 바꿔 줍니다';
     const out = h('div', { class: 'conv-out empty' }, hint);
     const gLink = h('a', { class: 'btn sm', target: '_blank', rel: 'noopener', href: 'https://www.google.com/search?q=1+CNY+to+KRW' }, '🔎 구글 환율');
     const nLink = h('a', { class: 'btn sm', target: '_blank', rel: 'noopener', href: 'https://m.search.naver.com/search.naver?query=' + encodeURIComponent('위안 환율') }, '🔎 네이버 환율');
@@ -1097,7 +1016,7 @@ export class App {
       },
     });
     // 원 → 위안
-    const hintW = '원화를 넣으면 위안으로 바꿔준다';
+    const hintW = '원화를 넣으면 위안으로 바꿔 줍니다';
     const outW = h('div', { class: 'conv-out empty' }, hintW);
     const inputW = h('input', {
       class: 'conv-in',
@@ -1117,7 +1036,7 @@ export class App {
       : live ? `오늘 환율 (${new Date(live.at).toLocaleDateString('ko-KR')} 기준)` : '기본값';
     const small = h('small', null, `1위안 = ${rate}원 · ${src}`);
     this.conv = { small, input, inputW };
-    v.append(h('div', { class: 'card conv' },
+    if (cur === 'money') v.append(h('div', { class: 'card conv' },
       h('div', { class: 'conv-title' }, '💱 위안 → 원 ', small),
       h('div', { class: 'conv-row' }, input, h('span', null, '¥')),
       out,
@@ -1127,19 +1046,14 @@ export class App {
       h('div', { class: 'row conv-links' },
         h('button', { class: 'btn sm', type: 'button', onclick: () => this.fetchRate(true) }, '↻ 오늘 환율 받기'),
         gLink, nLink)));
-    this.fetchRate(false);
+    if (cur === 'money') this.fetchRate(false);
 
-    const sections = this.data.info || [];
+    const sections = sectionsAll;
     sections.forEach((sec, i) => {
-      // 제목만 보이고 눌러서 펼침 (펼친 상태는 기억)
-      const open = this.infoOpen ? this.infoOpen.has(sec.id) : i < 2;
-      const card = h('details', { class: 'card info-sec', open },
-        h('summary', null, h('h3', null, `${sec.icon || '📌'} ${sec.title || ''}`)),
+      if (groupOf(sec) !== cur) return;
+      const card = h('div', { class: 'card info-sec' },
+        h('h3', null, `${sec.icon || '📌'} ${sec.title || ''}`),
         h('div', { class: 'rt' }, this.rich(sec.body)));
-      card.addEventListener('toggle', () => {
-        if (!this.infoOpen) this.infoOpen = new Set(sections.filter((x, k) => k < 2).map(x => x.id));
-        if (card.open) this.infoOpen.add(sec.id); else this.infoOpen.delete(sec.id);
-      });
       if (this.editing) {
         card.append(h('div', { class: 'edit-row' },
           h('button', { class: 'btn sm', type: 'button', onclick: () => E.editInfo(this, sec) }, '✏️ 수정'),
@@ -1157,7 +1071,7 @@ export class App {
   async fetchRate(force) {
     const live = this.store.prefs.rateLive;
     if (!force && live && Date.now() - live.at < 12 * 3600000) return;
-    if (navigator.onLine === false) { if (force) toast('오프라인이다 — 저장된 환율을 쓴다'); return; }
+    if (navigator.onLine === false) { if (force) toast('오프라인입니다 — 저장된 환율을 씁니다'); return; }
     try {
       const r = await fetch('https://open.er-api.com/v6/latest/CNY', { cache: 'no-store' });
       const j = await r.json();
@@ -1172,7 +1086,7 @@ export class App {
       }
       if (force) toast(`오늘 환율: 1위안 = ${Math.round(krw * 10) / 10}원`);
     } catch {
-      if (force) toast('환율을 못 받았다 — 구글/네이버 버튼으로 확인할 것');
+      if (force) toast('환율을 받지 못했습니다 — 구글/네이버 버튼으로 확인하십시오');
     }
   }
 
@@ -1236,7 +1150,7 @@ export class App {
     sec('🎫 현장에서 산다', '미리 예약 없음', g.site);
     sec('🤔 필요할 때만', '일정상 안 해도 되는 것', g.opt);
     sec('✅ 완료', '', g.done);
-    if (!items.length) v.append(h('div', { class: 'card empty' }, '예약 항목이 없다'));
+    if (!items.length) v.append(h('div', { class: 'card empty' }, '예약 항목이 없습니다'));
     v.append(h('div', { class: 'list-end' }));
   }
 
@@ -1266,7 +1180,7 @@ export class App {
         c.where ? h('div', { class: 'bk-line' }, '📱 ', inline(c.where, ctx)) : null,
         c.cost ? h('div', { class: 'bk-line' }, '💰 ', c.cost) : null,
         c.note ? h('details', { class: 'bk-note' }, h('summary', null, '자세히'), h('div', null, this.rich(c.note))) : null,
-        c.link ? h('a', { class: 'chip', href: c.link, target: '_blank', rel: 'noopener' }, '🔗 예약/참고 링크') : null),
+        c.link ? h('a', { class: 'chip', href: c.link, target: '_blank', rel: 'noopener' }, '🔗 링크 열기') : null),
       this.editing ? h('button', { class: 'btn sm', type: 'button', onclick: () => E.editCheck(this, c) }, '✏️') : null);
   }
 
@@ -1307,7 +1221,7 @@ export class App {
     sec('⏳ 예약 오픈 예정', groups.soon);
     sec('🎟️ 현장 구매·무료', groups.onsite);
     sec('✅ 완료', groups.done);
-    if (!items.length) v.append(h('div', { class: 'card empty' }, '항목이 없다'));
+    if (!items.length) v.append(h('div', { class: 'card empty' }, '항목이 없습니다'));
     if (this.editing) v.append(h('button', { class: 'btn add-btn', type: 'button', onclick: () => E.editCheck(this, null) }, '➕ 항목 추가'));
     v.append(h('div', { class: 'list-end' }));
   }
@@ -1338,7 +1252,7 @@ export class App {
           status,
           c.done && c.doneBy ? h('span', { class: 'pill muted' }, `${c.doneBy} 완료`) : null),
         c.note ? h('div', { class: 'check-note' }, this.rich(c.note)) : null,
-        c.link ? h('a', { class: 'chip', href: c.link, target: '_blank', rel: 'noopener', onclick: e => e.stopPropagation() }, '🔗 예약/참고 링크') : null),
+        c.link ? h('a', { class: 'chip', href: c.link, target: '_blank', rel: 'noopener', onclick: e => e.stopPropagation() }, '🔗 링크 열기') : null),
       this.editing ? h('button', { class: 'btn sm', type: 'button', onclick: () => E.editCheck(this, c) }, '✏️') : null);
   }
 
@@ -1368,7 +1282,7 @@ export class App {
     }).catch(() => { storeLine.textContent = ''; });
     countCachedTiles().then(n => { tileInfo.textContent = `지금 저장된 지도 조각: ${n}장`; }).catch(() => {});
     const syncLine = s.status === 'auth'
-      ? 'GitHub 토큰이 만료됐거나 권한이 없다. PC에서 토큰을 다시 설정해야 한다.'
+      ? 'GitHub 토큰이 만료됐거나 권한이 없습니다. PC에서 토큰을 다시 설정해야 합니다.'
       : `${(SYNC_TEXT[s.status] || SYNC_TEXT.idle)[1]} · 마지막 동기화 ${s.lastSync ? timeAgo(s.lastSync) : '없음'}${s.pending.length ? ` · 저장 대기 ${s.pending.length}건` : ''}`;
     const meta = this.data && this.data.meta;
     const body = h('div', { class: 'settings' },
@@ -1376,11 +1290,11 @@ export class App {
       h('div', { class: 'seg' }, people.map(p => h('button', {
         class: `seg-btn ${s.me === p ? 'on' : ''}`, type: 'button', onclick: () => { s.setMe(p); rebuild(); },
       }, p))),
-      h('p', { class: 'muted' }, '수정 기록에 이름이 남고, 개별 일정 날에는 내 일정이 먼저 보인다.'),
+      h('p', { class: 'muted' }, '수정 기록에 이름이 남고, 개별 일정 날에는 내 일정이 먼저 보입니다.'),
 
       MAP.id === 'amap' ? h('label', { class: 'set-label' }, '고덕 길찾기 여는 방식') : null,
       MAP.id === 'amap' ? seg('linkMode', [['app', '고덕 앱 바로 열기'], ['web', '웹페이지로 열기']]) : null,
-      MAP.id === 'amap' ? h('p', { class: 'muted' }, '안드로이드 폰에서는 고덕 앱이 바로 열린다. 아이폰·PC는 웹 고덕지도로 열리고, 앱이 깔려 있으면 거기서 앱으로 넘어간다. 안 열리면 "웹페이지로 열기"로 바꿔 볼 것.') : null,
+      MAP.id === 'amap' ? h('p', { class: 'muted' }, '안드로이드 폰에서는 고덕 앱이 바로 열립니다. 아이폰·PC는 웹 고덕지도로 열리고, 앱이 깔려 있으면 거기서 앱으로 넘어갑니다. 안 열리면 "웹페이지로 열기"로 바꿔 보십시오.') : null,
 
       h('label', { class: 'set-label' }, '내 위치'),
       h('button', { class: 'btn sm', type: 'button', onclick: () => { sheet.close(); setTimeout(() => this.openLocationHelp(), 120); } }, '📍 위치 권한 켜는 법'),
@@ -1389,11 +1303,11 @@ export class App {
       seg('lang', [['zh', '중문'], ['en', '영문']]),
 
       h('label', { class: 'set-label' }, '환율 (1위안 = ?원)'),
-      h('div', { class: 'row' }, rateIn, h('button', { class: 'btn sm', type: 'button', onclick: () => { const n = parseFloat(rateIn.value); if (n > 0) { s.setPref('rate', n); toast('환율 저장'); } } }, '저장')),
+      h('div', { class: 'row' }, rateIn, h('button', { class: 'btn sm', type: 'button', onclick: () => { const n = parseFloat(rateIn.value); if (n > 0) { s.setPref('rate', n); toast('환율을 저장했습니다'); } } }, '저장')),
 
       h('label', { class: 'set-label' }, '일정 업데이트 받기'),
       seg('sync', [['auto', '자동 (30초마다)'], ['manual', '내가 누를 때만']]),
-      h('p', { class: 'muted' }, '"내가 누를 때만"이면 위쪽 [업데이트 받기]를 눌러야 새 일정을 받는다. 데이터를 아끼거나 화면이 갑자기 바뀌는 게 싫을 때. 내가 고친 내용은 인터넷이 될 때 자동으로 올라간다.'),
+      h('p', { class: 'muted' }, '"내가 누를 때만"이면 위쪽 [업데이트 받기]를 눌러야 새 일정을 받습니다. 데이터를 아끼거나 화면이 갑자기 바뀌는 게 싫을 때. 내가 고친 내용은 인터넷이 될 때 자동으로 올라갑니다.'),
 
       h('label', { class: 'set-label' }, '동기화'),
       h('p', null, syncLine),
@@ -1403,25 +1317,25 @@ export class App {
         h('button', { class: 'btn sm', type: 'button', onclick: () => { s.refresh({ force: true }); toast('새로 불러오는 중…'); } }, '↻ 지금 동기화'),
         s.pending.length ? h('button', {
           class: 'btn sm danger', type: 'button',
-          onclick: async () => { if (await confirmSheet(`아직 저장 못 한 수정 ${s.pending.length}건을 버릴까요?`, { ok: '버리기', danger: true })) { s.discardPending(); toast('버렸다'); } },
+          onclick: async () => { if (await confirmSheet(`아직 저장 못 한 수정 ${s.pending.length}건을 버릴까요?`, { ok: '버리기', danger: true })) { s.discardPending(); toast('버렸습니다'); } },
         }, '대기 중 수정 버리기') : null),
-      !s.canEdit ? h('p', { class: 'muted' }, '이 앱에는 편집 토큰이 없어서 보기만 가능하다.') : null,
+      !s.canEdit ? h('p', { class: 'muted' }, '이 앱에는 편집 토큰이 없어서 보기만 가능합니다.') : null,
 
       h('label', { class: 'set-label' }, '이 기기에 저장된 일정'),
       storeLine,
       h('div', { class: 'row' },
-        h('button', { class: 'btn sm', type: 'button', onclick: () => { if (s.exportBackup()) toast('백업 파일을 내려받았다 (다운로드 폴더)'); } }, '💾 일정 백업 파일 받기')),
-      h('p', { class: 'muted small' }, '일정은 이 폰 안(브라우저 저장소)에 저장돼서 인터넷이 없어도 열린다. 백업 파일은 비밀번호 없이 열리는 파일이니 공유하지 말 것.'),
+        h('button', { class: 'btn sm', type: 'button', onclick: () => { if (s.exportBackup()) toast('백업 파일을 내려받았습니다 (다운로드 폴더)'); } }, '💾 일정 백업 파일 받기')),
+      h('p', { class: 'muted small' }, '일정은 이 폰 안(브라우저 저장소)에 저장돼서 인터넷이 없어도 열립니다. 백업 파일은 비밀번호 없이 열리는 파일이니 공유하지 마십시오.'),
 
       h('label', { class: 'set-label' }, '오프라인 지도'),
-      h('p', { class: 'muted' }, '와이파이에서 미리 저장해 두면 인터넷이 끊겨도 지도가 보인다 (장소 주변만, 수십 MB).'),
+      h('p', { class: 'muted' }, '와이파이에서 미리 저장해 두면 인터넷이 끊겨도 지도가 보입니다 (장소 주변만, 수십 MB).'),
       h('div', { class: 'row' }, h('button', { class: 'btn sm', type: 'button', onclick: () => { sheet.close(); this.prefetchMap(); } }, '⬇ 지도 미리 저장'), tileInfo),
 
       h('label', { class: 'set-label' }, '잠금'),
       h('button', {
         class: 'btn sm danger', type: 'button',
         onclick: async () => {
-          if (await confirmSheet('이 기기에서 잠글까요? 다시 열 때 여행 비밀번호가 필요하다.', { ok: '잠그기', danger: true })) {
+          if (await confirmSheet('이 기기에서 잠글까요? 다시 열 때 여행 비밀번호가 필요합니다.', { ok: '잠그기', danger: true })) {
             await s.lock();
             location.reload();
           }
@@ -1435,11 +1349,11 @@ export class App {
   async prefetchMap() {
     if (!this.data) return;
     if (!('caches' in window)) {
-      toast('이 브라우저는 지도 저장을 지원하지 않는다');
+      toast('이 브라우저는 지도 저장을 지원하지 않습니다');
       return;
     }
     const list = tilesForTrip(this.data, this.store.prefs.lang);
-    const ok = await confirmSheet(`지도 조각 ${list.length}장 (약 ${Math.round(list.length * 22 / 1024)}MB)을 저장한다. 와이파이에서 할 것.`, { ok: '저장 시작' });
+    const ok = await confirmSheet(`지도 조각 ${list.length}장 (약 ${Math.round(list.length * 22 / 1024)}MB)을 저장합니다. 와이파이에서 할 것.`, { ok: '저장 시작' });
     if (!ok) return;
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     const ctrl = new AbortController();
@@ -1466,7 +1380,7 @@ export class App {
     const sheet = openSheet({
       title: '누구세요?',
       body: h('div', null,
-        h('p', null, '수정 기록에 이름이 남는다. 나중에 설정에서 바꿀 수 있다.'),
+        h('p', null, '수정 기록에 이름이 남습니다. 나중에 설정에서 바꿀 수 있습니다.'),
         h('div', { class: 'seg big' }, people.map(p => h('button', {
           class: 'seg-btn', type: 'button', onclick: () => { this.store.setMe(p); sheet.close(); },
         }, p)))),

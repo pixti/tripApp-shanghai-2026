@@ -564,3 +564,9 @@ html, body { overscroll-behavior-x: none; } /* 옆으로 밀 때 브라우저 �
 .info, .tmi-body, .rt, .note-box, .si-desc, .steps { line-height: 1.65; }
 .info { font-size: 14.5px; }
 .info li { padding: 3px 0; }
+/* 하위 탭 (가이드·정보) */
+.sub-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: -2px -12px 0; padding: 2px 12px 4px; }
+.sub-tabs::-webkit-scrollbar { display: none; }
+.sub-tab { flex: none; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 13px; font-size: 14px; font-weight: 700; color: #30343b; cursor: pointer; white-space: nowrap; }
+.sub-tab.on { background: var(--dark); border-color: var(--dark); color: #fff; }
+.guide-asof { margin: 2px 6px; }

@@ -1,5 +1,5 @@
 // 오프라인용 서비스워커: 앱 파일은 저장본 우선, 고덕 지도 타일은 한 번 본 것 저장
-const VERSION = '2026-11-27T16-18-57';
+const VERSION = '2026-11-27T17-01-08';
 const SHELL = `shell-${VERSION}`;
 const TILES = 'tiles-v1';
 const MAX_TILES = 6000;
