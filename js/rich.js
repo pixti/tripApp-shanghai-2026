@@ -1,6 +1,6 @@
 // 메모용 간단 서식
 //  ## 소제목 / - 목록 / **굵게** / [이름](https://…) / 맨 주소 자동 링크
-//  {zh:中文} → 중국어 보여주기·복사 버튼, {tel:+86…|표시} → 전화 걸기, {copy:텍스트} → 복사 버튼
+//  {zh:中文} 또는 {zh:中文|한국어 뜻} → 중국어 보여주기·복사 버튼 (뜻은 옆에 작게), {tel:+86…|표시} → 전화 걸기, {copy:텍스트} → 복사 버튼
 import { h } from './util.js';
 
 const INLINE = /\*\*([^*]+)\*\*|\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|\{(zh|tel|copy):([^}]+)\}|(https?:\/\/[^\s<>()]+[^\s<>().,!?'"])/g;
@@ -52,10 +52,12 @@ export function inline(text, ctx = {}) {
         const [num, label] = val.split('|');
         out.push(h('a', { class: 'rt-tel', href: 'tel:' + num.replace(/[^+\d]/g, '') }, '📞 ', (label || num).trim()));
       } else if (m[4] === 'zh') {
-        // 누르면 복사, ⤢ 누르면 크게 보여주기
-        out.push(h('span', { class: 'zh-chip' },
-          h('button', { class: 'zh-chip-text', type: 'button', lang: 'zh-CN', title: '복사', onclick: () => ctx.onCopy && ctx.onCopy(val) }, val),
-          h('button', { class: 'zh-chip-big', type: 'button', 'aria-label': '크게 보기', onclick: () => ctx.onZh && ctx.onZh(val) }, '⤢')));
+        // {zh:中文|한국어 뜻} — 누르면 복사, ⤢ 누르면 크게 보여주기 (뜻은 옆에 작게)
+        const [zh, mean] = val.split('|').map(x => x.trim());
+        out.push(h('span', { class: `zh-chip ${mean ? 'has-mean' : ''}` },
+          h('button', { class: 'zh-chip-text', type: 'button', lang: 'zh-CN', title: '복사', onclick: () => ctx.onCopy && ctx.onCopy(zh) }, zh),
+          mean ? h('span', { class: 'zh-chip-mean' }, mean) : null,
+          h('button', { class: 'zh-chip-big', type: 'button', 'aria-label': '크게 보기', onclick: () => ctx.onZh && ctx.onZh(zh) }, '⤢')));
       } else {
         out.push(h('span', { class: 'rt-copy' }, val,
           h('button', { class: 'mini', type: 'button', onclick: () => ctx.onCopy && ctx.onCopy(val) }, '복사')));

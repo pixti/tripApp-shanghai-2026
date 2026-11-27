@@ -537,3 +537,10 @@ html, body { overscroll-behavior-x: none; } /* 옆으로 밀 때 브라우저 �
 .pill.need-rec { background: var(--amber-l); color: #8a5a00; font-weight: 800; }
 .pill.need-check { background: var(--blue-l); color: var(--blue-d); font-weight: 800; }
 .pill.need-opt, .pill.need-site { background: var(--chip); color: var(--sub); font-weight: 700; }
+.zh-chip-mean { align-self: center; padding: 0 6px 0 0; font-size: 12px; font-weight: 700; color: #4b5563; white-space: nowrap; }
+.zh-chip.has-mean .zh-chip-text { padding-right: 4px; }
+/* 역 안내: 층 흐름 */
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0 4px; }
+.flow-step { display: inline-flex; align-items: center; gap: 4px; background: var(--blue-l); color: var(--blue-d); border-radius: 10px; padding: 5px 9px; font-size: 13px; font-weight: 800; }
+.flow-arrow { color: var(--faint); font-weight: 900; }
+.steps li b:first-child { color: var(--text); }

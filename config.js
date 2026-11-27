@@ -16,13 +16,13 @@ export default {
     "iter": 600000
   },
   "check": {
-    "iv": "Xijo1/ENhPvRKm6Z",
-    "ct": "rP9/YJVF4SD3QYNQusXqQShcRF2mwYB1p4SdLDuvflynXF0DkYY="
+    "iv": "SXZiCeJNcGAyoz9d",
+    "ct": "Du29ICRYzqt6h48uNBmkptvuA2c4SQXgqH5Ef1gp+EjcNFbGPXM="
   },
   "token": {
-    "iv": "001dAyJzOVuro8gq",
-    "ct": "uzlbd0gNK71e/3A1JkmsOT67i/+SsAQGmgxrkjYt7x7OuVYKgH085Nk5RaH/EFe0DCXaljEM/APLbuVm0SicKw4W/ULyemTqo4z8WUwBmTtuuwlTnEs5bdv694AdJDw4J+agID4FRW8/KsuKjw=="
+    "iv": "OfBS08xQ5qNc0LR7",
+    "ct": "4z+kCPM2iwiYYC2SMB35mK9BUbUPy85x7Em1pNxUpmoHSNnBcp4XcEnOVkYYnbTK0J30LyUj+AOZgHjLieO8sBim6NUTw6JqbHmEmGItGFoaMVSBVnNrjHnBaA0WhhH+T34A9mLnvPRzx+b3UQ=="
   },
-  "build": "2026-11-27T05-50-59",
+  "build": "2026-11-27T16-04-24",
   "sw": true
 };

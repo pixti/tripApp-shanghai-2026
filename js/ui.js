@@ -869,7 +869,9 @@ export class App {
   openStation(st, { focus = null } = {}) {
     const lo = this.linkOpts();
     const part = (key, title) => st[key] && st[key].length
-      ? h('details', { class: 'st-part', open: !focus || focus === key }, h('summary', null, title), this.stepList(st[key]))
+      ? h('details', { class: 'st-part', open: !focus || focus === key }, h('summary', null, title),
+        st.flow && st.flow[key] ? h('div', { class: 'flow' }, st.flow[key].map((f, i) => [i ? h('span', { class: 'flow-arrow' }, '→') : null, h('span', { class: 'flow-step' }, f)])) : null,
+        this.stepList(st[key]))
       : null;
     const body = h('div', { class: 'st-sheet' },
       (ph => ph ? this.photoFigure(ph, 'site-photo') : null)(findPhoto({ zh: st.zh, cat: 'station' })),
