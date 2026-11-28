@@ -101,7 +101,7 @@ export class App {
     let sx = 0, sy = 0, ok = false;
     main.addEventListener('touchstart', e => {
       const t = e.touches[0];
-      ok = e.touches.length === 1 && !e.target.closest('.map-card, input, textarea, select, .sheet-wrap, .seg, .links');
+      ok = e.touches.length === 1 && !e.target.closest('.map-card, input, textarea, select, .sheet-wrap, .seg, .links, .sub-tabs, .day-tabs, .st-grid, .flow');
       sx = t.clientX; sy = t.clientY;
     }, { passive: true });
     main.addEventListener('touchend', e => {
